@@ -1,8 +1,0 @@
-platform/backend/__pycache__/
-platform/backend/data/*.db
-platform/backend/data/secret.key
-*.pyc
-.playwright-mcp/
-*.pdf
-*.png
-!platform/prototype/mockup-v4.html

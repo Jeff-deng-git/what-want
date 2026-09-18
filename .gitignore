@@ -47,3 +47,6 @@ platform/backend/.tmp/
 platform/backend/tests/_tmp/
 *.err
 *.out
+
+# ---- 本地备份文件不入库 ----
+.gitignore.bak*
