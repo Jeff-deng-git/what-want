@@ -1,0 +1,111 @@
+{
+  "chapter_id": "ch08",
+  "chapter_title": "施展自我认知的魔法，使人生发生翻天覆地的变化",
+  "md_source": "chapter_md/第八章-施展自我认知的魔法，使人生发生翻天覆地的变化.md",
+  "page_type": "flowchart",
+  "core_concepts": [
+    "全书可视化流程图是对整本书的总结性决策导航：理解自我只需做三件事——找到重要的事（价值观）、擅长的事（才能）、喜欢的事（热情），组合即『想做的事』。",
+    "色彩浴、海胆、成功定义是书中的比喻与哲学阐述，不是结构化练习步骤；ch08 把它们作为阅读/可选反思内容，不强制、无 7 天表格。",
+    "当你不知道下一步该做什么时，翻到这页重新梳理方向；它引用全部 ch04–ch07，并在『否/找不到』时真实跳转到对应章。"
+  ],
+  "guiding_questions": [
+    "你现在明确自己为何而活吗？",
+    "你明确自己的工作目的吗？",
+    "你有能取得成果的长处吗？",
+    "你有感兴趣或有热情的领域吗？"
+  ],
+  "flowchart": {
+    "comment_enabled": true,
+    "stages": [
+      {
+        "id": "stage-1",
+        "title": "阶段一：探索价值观（确定『为何而活』与『工作目的』）",
+        "decision_points": [
+          {
+            "id": "dp-1",
+            "question": "是否明确自己为何而活？",
+            "branches": [
+              { "label": "是", "next": "dp-2" },
+              { "label": "否", "jump": { "chapter": "ch04", "hint": "前往《寻找自己的价值观！》做价值观练习" } },
+              { "label": "找到了价值观", "next": "dp-2" },
+              { "label": "找不到价值观", "jump": { "chapter": "ch04", "hint": "回答问题清单中的30个问题", "question_key": "value_questions" } },
+              { "label": "还是没找到", "jump": { "chapter": "ch04", "hint": "回答问题清单中带⭐的问题（即全部30问），明确工作目的后继续", "question_key": "value_questions" }, "next": "dp-2" }
+            ]
+          },
+          {
+            "id": "dp-2",
+            "question": "是否明确工作目的？",
+            "branches": [
+              { "label": "是", "next": "dp-3" },
+              { "label": "否", "jump": { "chapter": "ch04", "hint": "前往《寻找自己的价值观！》明确工作目的" } }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "stage-2",
+        "title": "阶段二：探索长处（确定『能取得成果的能力』）",
+        "decision_points": [
+          {
+            "id": "dp-3",
+            "question": "是否有能取得成果的长处？",
+            "branches": [
+              { "label": "是", "next": "dp-4" },
+              { "label": "否", "jump": { "chapter": "ch05", "hint": "前往《寻找自己的长处吧！》做才能练习" } },
+              { "label": "找到了", "next": "dp-4" },
+              { "label": "没找到", "jump": { "chapter": "ch05", "hint": "回答问题清单中的30个问题", "question_key": "talent_questions" } },
+              { "label": "找到了长处", "next": "dp-4" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "stage-3",
+        "title": "阶段三：探索兴趣与结合应用（寻找『喜欢的事』）",
+        "decision_points": [
+          {
+            "id": "dp-4",
+            "question": "有没有感兴趣或有热情的领域？",
+            "branches": [
+              { "label": "否", "jump": { "chapter": "ch06", "hint": "前往《寻找自己喜欢的领域吧！》做喜欢的事练习" } },
+              { "label": "没找到", "hint_only": "喜欢的事终究只是为了实现『工作目的』的手段。确定能够实现工作目的的领域，边工作边培养吧！", "next": "dp-4" },
+              { "label": "是", "jump": { "chapter": "ch07", "hint": "通过组合喜欢和擅长的事，假设一个想做的事" } }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "stage-4",
+        "title": "阶段四：提炼目标与落实手段",
+        "decision_points": [
+          {
+            "id": "dp-refine",
+            "question": "通过『工作目的』提炼出『想做的事』了吗？",
+            "branches": [
+              { "label": "去提炼", "jump": { "chapter": "ch07", "hint": "通过『工作目的』提炼出『想做的事』（ch07 筛选定稿）" } },
+              { "label": "提炼成功", "next": "dp-5" }
+            ]
+          },
+          {
+            "id": "dp-5",
+            "question": "是否找到实现真正想做的事的手段？",
+            "branches": [
+              { "label": "找到了", "next": "end" },
+              { "label": "没找到", "hint_only": "通过书、网络、研讨会等收集信息。", "next": "end" },
+              { "label": "找到了（收集后）", "next": "end" }
+            ]
+          }
+        ]
+      }
+    ],
+    "terminal": {
+      "id": "end",
+      "message": "辛苦了！全身心投入到实现真正想做的事情中去吧！"
+    }
+  },
+  "mentor_hooks": {
+    "focus": "全书流程图导航与用户备注——陪伴用户从『不知道下一步做什么』中理清方向。",
+    "references": ["values", "work_purpose", "talents", "likes", "ideal_works"],
+    "entry_prompt": "你正在翻阅全书的『可视化流程图』。这是一张决策导航图，帮你判断现在该回到哪一章去做练习。你可以结合用户已经写下的备注，温和地建议下一步。"
+  }
+}

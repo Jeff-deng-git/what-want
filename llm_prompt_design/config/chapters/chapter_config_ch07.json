@@ -1,0 +1,196 @@
+{
+  "chapter_id": "ch07",
+  "chapter_title": "找到真正想做的事，活出真实的自己",
+  "md_source": "chapter_md/第七章-找到_真正想做的事_，活出真实的自己.md",
+  "core_concepts": [
+    "放弃『为了将来』的思维：找到目前最想做的事并认真对待，人才会成长；不要先学对将来有用的技能再找想做的事",
+    "『想做的事』最初只是假设也没关系：设立假设 → 行动 → 回顾 → 修正，螺旋上升逐渐接近『真正想做的事』，而非盲目行动（赌博式跳槽的反例）",
+    "组合公式：喜欢的事 × 擅长的事 先假设出『想做的事』候选（此阶段量比质重要，图 7-2 自由组合）",
+    "工作目的（ch4）是过滤器：与『想通过工作传递的价值观』直接相关的候选 → 『真正想做的事』（作为工作）；相关但仍吸引用户的 → 『作为兴趣的想做的事』",
+    "ch5 的◎级长处、ch6 拆到『方面』的喜欢之事，是组合时最可靠的原料——第七章以◎级擅长为主、以『方面』为连接点"
+  ],
+  "guiding_questions": [
+    "如果把你『最喜欢做的事』和『最擅长做的事』放在一起，会冒出什么你想去做的事？",
+    "你第四章定的『工作目的』，会帮你筛掉哪些只是看起来好玩、其实不想当工作的候选？",
+    "在列出来的候选里，哪一个你哪怕只是假设、也最想现在就试试？"
+  ],
+  "exercises": [
+    {
+      "step_id": "step-1",
+      "name": "组合喜欢×擅长，假设想做的事",
+      "instruction": "读取导师上下文中 ch5 的『擅长之事（talents，含◎〇△评级）』与 ch6 的『喜欢的事（likes，含领域与方面，取 ch06 step-2 已提交、profile.likes 的结构化版本，非 step-1 领域级）』，自由交叉组合，批量假设 8–15 条『想做的事』候选。每条候选：标题建议用『一个……的人』句式（如『一个帮迷茫的人看清自己方向的人』）；like_source 标注它来自哪条喜欢的事（含哪个『方面』）；strength_source 标注它用到哪项擅长之事（优先◎级）。约束：不臆造用户未透露的擅长/喜欢；允许假设、数量优先于质量；输出严格 JSON（ideal_works 为对象数组）。素材不足时返回已有候选并提示补充，不强凑数量。",
+      "method": "喜欢×擅长组合矩阵：逐条把 ch6『方面』与 ch5『长处』配对，生成候选；ch4 工作目的暂不作为过滤、仅作背景",
+      "input_schema": [],
+      "output": "ideal_works(8–15 条想做的事候选，含 like_source/strength_source) + commentary(组合点评)",
+      "user_action": "用户审阅 LLM 生成的候选，增删、改写标题、锁定；LLM 只辅助组合、不替用户定性。",
+      "llm_role": "assist",
+      "output_fields": [
+        {
+          "name": "ideal_works",
+          "type": "editable_list",
+          "lockable": true,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "title",
+                "type": "text",
+                "label": "想做的事（建议『一个……的人』句式）"
+              },
+              {
+                "name": "like_source",
+                "type": "text",
+                "label": "喜欢的来源（ch6 喜欢的事·方面）",
+                "readonly": true,
+                "optional": true
+              },
+              {
+                "name": "strength_source",
+                "type": "text",
+                "label": "擅长的来源（ch5 长处，优先◎级）",
+                "readonly": true,
+                "optional": true
+              },
+              {
+                "name": "bucket",
+                "type": "string",
+                "label": "归类",
+                "enum": [
+                  "真正想做的事",
+                  "作为兴趣的想做的事",
+                  "未定"
+                ],
+                "default": "未定"
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "default": false
+              }
+            ]
+          }
+        },
+        {
+          "name": "commentary",
+          "type": "markdown",
+          "readonly": true
+        }
+      ],
+      "few_shot_examples": [
+        {
+          "user": "我喜欢『帮人认识自己』这个方面，也擅长『用语言让人行动』。",
+          "assistant": "这两条搭一起，就是一个候选：『一个帮迷茫的人用对的话看清自己方向的人』。我把它记下来，like_source 标你的『帮人认识自己』，strength_source 标你的『用语言让人行动（◎级）』。"
+        }
+      ],
+      "step_role_id": "career_counselor"
+    },
+    {
+      "step_id": "step-2",
+      "name": "用工作目的筛选，定稿真正/兴趣",
+      "references": [
+        {
+          "from_exercise": "step-1",
+          "fields": [
+            "ideal_works"
+          ]
+        }
+      ],
+      "instruction": "读取导师上下文中 ch4 的『工作目的（work_purpose）』与『核心价值观（values）』，对 step-1 的候选逐条给出分桶建议：与工作目的直接相关 → 『真正想做的事』（作为工作）；无关但仍吸引用户 → 『作为兴趣的想做的事』；拿不准 → 『未定』。LLM 不替用户定档，只建议并说明理由。用户可改标题、改 bucket、锁定、增删。保留已锁定项（preserve_output 中 locked=true 必须原样保留，不重新生成）。最后给出『下一步行动 / 复盘计划』（next_action，螺旋上升：先试最想做的假设，行动后回顾修正）。约束：输出严格 JSON（ideal_works 带 bucket + next_action 概述）。",
+      "method": "工作目的过滤：用 ch4 工作目的做过滤器，把候选分成真正/兴趣两桶；强调『假设可接受、先行动再修正』",
+      "input_schema": [],
+      "output": "ideal_works(带 bucket 分桶，editable_list) + commentary(筛选点评) + next_action(下一步行动/复盘计划)",
+      "user_action": "用户依据工作目的把候选归入真正/兴趣两桶，锁定最想先试的，LLM 给建议不替定档。",
+      "llm_role": "assist",
+      "output_fields": [
+        {
+          "name": "ideal_works",
+          "type": "editable_list",
+          "lockable": true,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "title",
+                "type": "text",
+                "label": "想做的事（建议『一个……的人』句式）"
+              },
+              {
+                "name": "like_source",
+                "type": "text",
+                "label": "喜欢的来源（ch6 喜欢的事·方面）",
+                "readonly": true,
+                "optional": true
+              },
+              {
+                "name": "strength_source",
+                "type": "text",
+                "label": "擅长的来源（ch5 长处，优先◎级）",
+                "readonly": true,
+                "optional": true
+              },
+              {
+                "name": "bucket",
+                "type": "string",
+                "label": "归类",
+                "enum": [
+                  "真正想做的事",
+                  "作为兴趣的想做的事",
+                  "未定"
+                ],
+                "default": "未定"
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "default": false
+              }
+            ]
+          }
+        },
+        {
+          "name": "commentary",
+          "type": "markdown",
+          "readonly": true
+        },
+        {
+          "name": "next_action",
+          "type": "markdown",
+          "readonly": true
+        }
+      ],
+      "few_shot_examples": [
+        {
+          "user": "我把『帮人看清方向』标了真正想做的事，『养苔藓』标了兴趣。",
+          "assistant": "合理。『帮人看清方向』直接服务你第四章的工作目的『帮更多人找到自己真正想做的事』，归真正想做的事；『养苔藓』你喜欢但不打算当工作，归作为兴趣的想做的事。下一步可以先接一个 30 分钟的免费梳理对话试试水。"
+        }
+      ],
+      "step_role_id": "mentor"
+    }
+  ],
+  "output_template": "完成两步后请呈现：①8–15 条『想做的事』候选（含喜欢来源/擅长来源）②按工作目的分桶：真正想做的事 / 作为兴趣的想做的事 ③你下一步最想先试的假设与复盘计划。",
+  "few_shot_examples": [
+    {
+      "user": "我喜欢的事和擅长的事连不起来。",
+      "assistant": "先把 ch6 的喜欢之事拆到『方面』，再找 ch5 里◎级的擅长——它们往往是连接点。我们一条条配对，先不管好坏，列出来再说。"
+    }
+  ],
+  "step_context": {
+    "references": [
+      "talents",
+      "likes",
+      "work_purpose",
+      "values"
+    ]
+  },
+  "mentor_hooks": {
+    "focus": "三要素组合 + 螺旋上升",
+    "references": [
+      "talents",
+      "likes",
+      "work_purpose",
+      "values"
+    ],
+    "entry_prompt": "你前面已经定了：ch5 擅长之事（talents，含◎〇△评级）、ch6 喜欢的事（likes，含领域与方面）、ch4 工作目的（work_purpose）与核心价值观（values）。现在第七章把它们组合起来——你会用『喜欢的事 × 擅长的事』先假设出『想做的事』候选，再用『工作目的』筛出真正想做的事与作为兴趣的想做的事。先从组合开始，别急着定性。"
+  },
+  "ui_context": {
+    "references": []
+  }
+}

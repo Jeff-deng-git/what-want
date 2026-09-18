@@ -58,9 +58,16 @@ python run.py                   # 后端起在 :8011
 
 然后打开 `platform/frontend/index.html`（或用任意静态服务器托管）。
 
-主要环境变量：`BACKEND_PORT`（默认 8011）、`WW_DB_PATH`（默认 `data/ww.db`）。
+**AI 能力需要自备密钥**（没有密钥时后端可启动、静态流程可走通，但 AI 分析会失败）：
 
-> **前置条件**：阅读功能依赖书籍正文。把各章 Markdown 与插图放到项目根的 `chapter_md/` 下（默认读取路径），否则章节正文无法渲染。流程与练习功能不依赖它。
+```bash
+export DEEPSEEK_API_KEY="sk-..."        # 或对应 provider 的 <PROVIDER>_API_KEY
+# 也可以写入 platform/backend/data/secret.key（该文件不入库）
+```
+
+主要环境变量：`BACKEND_PORT`（默认 8011）、`WW_DB_PATH`（默认 `data/ww.db`）、`FRONTEND_ORIGIN`（默认 `http://localhost:3011`）。
+
+> **前置条件**：两处功能依赖书籍正文，需自备——① 章节正文阅读（放到项目根 `chapter_md/`）；② 第四章「100 例价值观清单」抽屉（读 `chapter_md/问题清单.md`，缺失时该抽屉为空，不会报错）。**其余流程与练习功能由章节配置驱动，不依赖书籍原文。**
 
 ## 目录结构
 
@@ -68,13 +75,13 @@ python run.py                   # 后端起在 :8011
 What_Want/
 ├── llm_prompt_design/   设计侧交付物
 │   ├── docs/            8 份 PRD、逐章落地设计、架构决策记录
-│   ├── config/          章节配置 JSON + 统一 Schema
+│   ├── config/          章节配置 JSON + 统一 Schema（chapters/ 为运行时权威契约）
 │   └── assets/          设计图
-├── platform/
-│   ├── backend/         FastAPI 服务（routers / runtime / services / tests）
-│   ├── frontend/        单页前端
-│   └── prototype/       各章交互原型（HTML，可直接在浏览器打开）
-└── SPEC.md / PROGRESS.md
+└── platform/
+    ├── backend/         FastAPI 服务（routers / runtime / services / tests）
+    ├── frontend/        单页前端
+    ├── prototype/       各章交互原型（HTML，可直接在浏览器打开）
+    └── SPEC.md / PROGRESS.md
 ```
 
 设计侧与开发侧的分工：设计侧出方案（页面逻辑、字段契约、数据库设计），开发侧做实施。每章的落地设计文档是开发交接的唯一入口，字段契约以 `config/chapters/chapter_config_chXX.json` 为权威。

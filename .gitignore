@@ -8,13 +8,14 @@ platform/backend/data/secret.key
 !platform/prototype/mockup-v4.html
 
 # ---- 书籍原文与提取产物（版权内容，本地保留但不入库）----
+# 注意：一律用前导 / 锚定仓库根目录，否则会误伤 llm_prompt_design/config/chapters/ 等运行时目录
 *.epub
-chapter_md/
-chapter_md.bak_*/
-chapters/
-chapters_xhtml/
-epub_extracted/
-chapter_html/
+/chapter_md/
+/chapter_md.bak_*/
+/chapters/
+/chapters_xhtml/
+/epub_extracted/
+/chapter_html/
 platform/backend/book/
 
 # ---- OCR / 清理中间产物 ----
@@ -48,5 +49,6 @@ platform/backend/tests/_tmp/
 *.err
 *.out
 
-# ---- 本地备份文件不入库 ----
+# ---- 本地备份文件与过程交接件不入库 ----
 .gitignore.bak*
+HANDOFF.md

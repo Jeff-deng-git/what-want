@@ -1,0 +1,106 @@
+{
+  "chapter_id": "ch02",
+  "chapter_title": "我们为什么会因为找不到想做的事而迷茫",
+  "md_source": "chapter_md/第二章-我们为什么会因为_找不到想做的事而迷茫.md",
+  "core_concepts": [
+    "迷茫的根源：用『外部标准』做选择，而非『内部标准』",
+    "外部标准：社会/他人期待、薪资排名、热门行业（参考人生起伏、果酱实验、市值前50变迁）",
+    "内部标准：你自己的价值观与满足感",
+    "选择越多越容易瘫痪（果酱实验）；外部标准越多，越不知道自己要什么"
+  ],
+  "guiding_questions": [
+    "你最近一次重大选择，是出于『别人觉得好』还是『你自己想要』？",
+    "如果没人评价你，你会选什么样的工作与生活？",
+    "你被哪些『外部标准』推着走，却并不开心？"
+  ],
+  "exercises": [
+    {
+      "name": "内外标准对照",
+      "instruction": "列出你当前在做的主要事项，逐件标注是『外部驱动』还是『内部驱动』，并写下推动你的声音或理由。",
+      "worksheet": "事项 / 驱动类型 / 推动你的声音或理由",
+      "user_action": "用户至少列出 2 件当前主要事项，逐件自己标注『外部驱动/内部驱动』并可补充备注。LLM 必须结合事项、驱动标签和备注发现自相矛盾处，不替用户定性。",
+      "llm_role": "assist",
+      "output_fields": [
+        {
+          "name": "commentary",
+          "type": "markdown",
+          "readonly": true
+        },
+        {
+          "name": "internal_external_ratio",
+          "type": "table",
+          "readonly": true
+        },
+        {
+          "name": "reclaim_item",
+          "type": "text",
+          "lockable": true
+        }
+      ],
+      "few_shot_examples": [
+        {
+          "user": "事项：加班做项目。我标内部驱动，因为『能学到东西』。备注：领导会看到我的进步。",
+          "assistant": "你把它标成了内部驱动，但备注里出现了『领导会看到』这个外部评价线索。可以继续观察：如果没有人知道这件事，也没有升职或认可，你还会愿意用同样的时间投入吗？"
+        }
+      ],
+      "step_id": "step-1",
+      "step_role_id": "psychologist",
+      "input_schema": [
+        {
+          "type": "list_of_items",
+          "name": "drive_items",
+          "label": "列出你当前主要投入的事",
+          "item_schema": {
+            "fields": [
+              {
+                "name": "text",
+                "type": "text",
+                "placeholder": "写下这件事",
+                "required": true
+              },
+              {
+                "name": "drive",
+                "type": "select",
+                "required": true,
+                "options": [
+                  "external",
+                  "internal"
+                ],
+                "labels": {
+                  "external": "外部驱动",
+                  "internal": "内部驱动"
+                }
+              },
+              {
+                "name": "note",
+                "type": "text",
+                "placeholder": "可选：是什么声音或理由在推动你？"
+              }
+            ]
+          },
+          "min_items": 2,
+          "max_items": 10
+        },
+        {
+          "type": "text",
+          "name": "notes",
+          "placeholder": "还想补充什么？（选填）"
+        }
+      ]
+    }
+  ],
+  "output_template": "请输出一个 JSON 对象：commentary 用 Markdown 逐项映照用户的事项、驱动标签和备注；internal_external_ratio 由后端按事项数量派生；reclaim_item 给出一句可由用户继续改写的『最该收回主动权』草稿。不得只复述输入或写成章节摘要。",
+  "few_shot_examples": [
+    {
+      "user": "大家都说去大厂好，我就去了，但很空虚。",
+      "assistant": "这很典型——你用的是『外部标准过滤器』。空虚说明内部标准没被满足。我们能聊聊，抛开『大厂好不好』，你自己在意的是什么吗？"
+    }
+  ],
+  "mentor_hooks": {
+    "focus": "区分外部期待与内在标准",
+    "references": [
+      "misconceptions_cleared",
+      "external_voices"
+    ]
+  }
+}

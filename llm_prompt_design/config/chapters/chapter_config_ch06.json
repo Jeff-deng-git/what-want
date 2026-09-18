@@ -1,0 +1,366 @@
+{
+  "chapter_id": "ch06",
+  "chapter_title": "找到喜欢的事，和努力说再见",
+  "md_source": "chapter_md/第六章-找到_喜欢的事_，和努力说再见.md",
+  "core_concepts": [
+    "喜欢的事=感兴趣、有好奇心的领域；面对它会产生『为什么/怎么会这样/怎么办』的探究欲",
+    "两种爱好：『因为有用所以喜欢』（为结果而做，不能作为工作）vs『因为兴趣所以喜欢』（做的瞬间开心，可以作为工作）",
+    "合理性陷阱：只做有用/能展示/能赚钱/能产出成果的事，会丢失做喜欢的事的初心",
+    "图 6-1 拆解：『喜欢的事』必须拆到两层——领域（如棒球）→喜欢的方面（如喜欢团队合作/磨炼技术/思考策略），最终与『擅长的事』连接",
+    "错误模式：『因为喜欢棒球，所以从事棒球相关工作』只看领域不看具体工作内容，往往失败",
+    "三个支柱关系：喜欢的事 × 擅长的事 × 重要的事 = 真正想做的事；本章产出『喜欢的事』将在第七章与 ch04 价值观、ch05 擅长之事组合",
+    "找到 10 个左右『喜欢的事』（理想 20 个），每条拆成「领域 × 喜欢的方面」，并关联 ch05 的擅长之事"
+  ],
+  "guiding_questions": [
+    "你做什么事时会不由自主想知道『为什么/怎么会这样/怎么办』，不做就难受？",
+    "有没有哪个领域曾『拯救』或『点燃』过你，让你产生强烈的探究欲？",
+    "如果不用考虑工作、金钱等条件，你单纯因为感兴趣而想做的是什么？"
+  ],
+  "exercises": [
+    {
+      "step_id": "step-1",
+      "name": "回答5个问题，找出喜欢的事",
+      "instruction": "逐题长文作答书中精选的 5 个问题，唤醒你『因为兴趣所以喜欢』的领域。LLM 只映照、不判断，从答案中提炼初步的『喜欢的事』领域清单（likes，每项形如 {text, locked:false}；**step-1 不拆方面、不关联擅长**，aspects/linked_strengths 由 step-2 引入），并给出整体映照点评（commentary，含『合理性陷阱』提醒：识别用户是否把『因为有用所以喜欢』误当成真兴趣）。约束：不臆造用户未透露的领域；输出严格 JSON（likes 为对象数组）。10+ 为引导目标，素材不足时返回已有证据并提示补充，不强凑数量。",
+      "method": "书中精选5问（花钱也想学的事/书架上在意的书/被拯救的经历/想道谢的工作/对社会愤怒的事），唤醒内在兴趣领域",
+      "input_schema": [
+        {
+          "name": "q1",
+          "label": "你现在有即使花钱也想学习的事情吗？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q2",
+          "label": "在你的书架上摆放着什么类型的书？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q3",
+          "label": "有没有遇到过让你产生『真是太好了！』『它拯救了我！』这种感觉的领域或者事物？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q4",
+          "label": "在迄今为止的生活中，你『想道谢的工作』是什么？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q5",
+          "label": "迄今为止你会对社会中的什么事情感到愤怒？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "passion_questions",
+          "label": "（可选）从「热情 30 问」题库追加回答，作为发现喜欢之事的补充素材（题库由 questions 服务接入，本题回答存于 book_notes，运行前由前端按 q_order 取回填入本字段）",
+          "type": "list_of_items",
+          "required": false,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "question_id",
+                "type": "number",
+                "label": "题库题目全局序号 q_order（热情分类 61–90）"
+              },
+              {
+                "name": "question",
+                "type": "text",
+                "label": "题目原文（建议保存以抗题库更新）",
+                "optional": true
+              },
+              {
+                "name": "answer",
+                "type": "text",
+                "label": "用户回答"
+              }
+            ]
+          }
+        }
+      ],
+      "output_fields": [
+        {
+          "name": "likes",
+          "type": "editable_list",
+          "lockable": true,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "text",
+                "type": "text",
+                "label": "喜欢的领域"
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "default": false
+              },
+              {
+                "name": "source",
+                "type": "string",
+              "label": "来源（q1–q5 或 q61–q90；小写 q+全局题号）",
+              "optional": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "commentary",
+          "type": "markdown",
+          "readonly": true
+        }
+      ],
+      "few_shot_examples": [
+        {
+          "user": "我答着答着发现，朋友说我『特别爱琢磨人为什么这么想』，但我自己觉得这没什么。",
+          "assistant": "这恰恰是『喜欢的事』的典型信号——你对『人为何如此』有不由自主的探究欲。我们把它记为一个领域方向，后面步骤再拆成具体的『喜欢的方面』。"
+        }
+      ],
+      "step_role_id": "psychologist"
+    },
+    {
+      "step_id": "step-2",
+      "name": "整理《喜欢的事清单》",
+      "references": [
+        {
+          "from_exercise": "step-1",
+          "fields": [
+            "likes"
+          ]
+        }
+      ],
+      "input_schema": [
+        {
+          "name": "reference_talents",
+          "label": "从第五章《使用说明书》引用的擅长之事（已加入本次参考列表；点击「让教练汇总并建议关联」后会与上一步领域一起分析）",
+          "type": "list_of_items",
+          "required": false,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "text",
+                "type": "text",
+                "label": "一个参考擅长之事"
+              }
+            ]
+          }
+        },
+        {
+          "name": "passion_seeds",
+          "label": "从「喜欢的事 100 例」引用的领域种子（点击「引用」加入；运行时与上一步领域、reference_talents 合并去重作为本次分析上下文，不写入最终 likes）",
+          "type": "list_of_items",
+          "required": false,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "text",
+                "type": "text",
+                "label": "一个引用的领域种子"
+              },
+              {
+                "name": "source",
+                "type": "string",
+                "label": "来源",
+                "default": "passion_examples"
+              }
+            ]
+          }
+        }
+      ],
+      "instruction": "审阅 LLM 汇总的 10+ 『喜欢的事』，每条拆成「领域 × 喜欢的方面」，并可关联 ch5 的擅长之事。LLM 不替你定性、只建议关联。最终归纳成你的《喜欢的事清单》（likes，每项形如 {field, aspects[], linked_strengths[], sources[], locked}）。约束：保留已锁定项（preserve_output 中 locked=true 必须原样保留，不重新生成）；不臆造用户未透露的领域；建议『领域→方面』拆解但不替用户下定论；识别并提示『因为有用所以喜欢』的合理性陷阱；输出严格 JSON（likes 为对象数组，引用自 ch5 擅长之事的项进入 linked_strengths，与 step-1 领域合并去重）。",
+      "method": "用户给每条喜欢的事拆『领域』与『喜欢的方面』，并关联 ch5 擅长之事；LLM 辅助、不判断；目标≥10个、理想20个；第七章将以『喜欢×擅长×重要』三者交集组合出『想做的事』",
+      "output_fields": [
+        {
+          "name": "likes",
+          "type": "editable_list",
+          "lockable": true,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "field",
+                "type": "text",
+                "label": "领域"
+              },
+              {
+                "name": "aspects",
+                "type": "editable_list",
+                "label": "喜欢的方面",
+                "item_schema": {
+                  "fields": [
+                    {
+                      "name": "text",
+                      "type": "text",
+                      "label": "一个喜欢的方面"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "linked_strengths",
+                "type": "editable_list",
+                "label": "关联的擅长之事（来自 ch5）",
+                "item_schema": {
+                  "fields": [
+                    {
+                      "name": "text",
+                      "type": "text",
+                      "label": "一个擅长之事"
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "sources",
+                "type": "list",
+                "label": "来源（q1–q5 或 q61–q90；小写 q+全局题号；无法可靠溯源时留空数组）",
+                "optional": true
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "default": false
+              }
+            ]
+          }
+        },
+        {
+          "name": "commentary",
+          "type": "markdown",
+          "readonly": true
+        }
+      ],
+      "few_shot_examples": [
+        {
+          "user": "我把『自我认知』标了领域，方面写了『把复杂概念讲清楚』『帮人认识自己』，关联了 ch5 的『善于用语言帮助别人』。",
+          "assistant": "从方法上看，『喜欢的事』要拆到『方面』才能和『擅长的事』连起来——你这条『自我认知 × 帮人认识自己 × 善于用语言帮助别人』正好是第七章三者交集的好素材。"
+        }
+      ],
+      "step_role_id": "career_counselor"
+    }
+  ],
+  "output_template": "完成两步后请呈现：①10+ 喜欢的事清单（每条 = 领域 × 喜欢的方面 × 关联擅长之事）②合理性陷阱提醒（区分『因为兴趣』vs『因为有用』）。",
+  "few_shot_examples": [
+    {
+      "user": "我总觉得找不到喜欢的事，只知道『应该』做什么。",
+      "assistant": "『应该做』往往是外部的有用性，不是内在兴趣。我们从 5 个具体问题慢慢挖——你做什么会不由自主想知道『为什么』，不做就难受？"
+    }
+  ],
+  "step_context": {
+    "references": []
+  },
+  "mentor_hooks": {
+    "focus": "喜欢的事识别：内在兴趣 vs 外部有用性",
+    "references": [
+      "talents",
+      "likes"
+    ],
+    "entry_prompt": "你第五章写了《使用说明书》里的擅长之事。现在第六章我们找你『因为兴趣所以喜欢』的事——你做什么会不由自主想知道、不做就难受？小心别把『因为有用所以喜欢』误当成真兴趣。"
+  },
+  "ui_context": {
+    "references": [],
+    "passion_examples": [
+      { "id": "p01", "text": "动物" },
+      { "id": "p02", "text": "花" },
+      { "id": "p03", "text": "农业" },
+      { "id": "p04", "text": "林业" },
+      { "id": "p05", "text": "宇宙" },
+      { "id": "p06", "text": "自然环境" },
+      { "id": "p07", "text": "机器人" },
+      { "id": "p08", "text": "IT" },
+      { "id": "p09", "text": "电脑" },
+      { "id": "p10", "text": "艺术" },
+      { "id": "p11", "text": "摄影" },
+      { "id": "p12", "text": "商品设计" },
+      { "id": "p13", "text": "平面设计" },
+      { "id": "p14", "text": "音乐" },
+      { "id": "p15", "text": "诗歌" },
+      { "id": "p16", "text": "乐器" },
+      { "id": "p17", "text": "文娱活动" },
+      { "id": "p18", "text": "表演" },
+      { "id": "p19", "text": "电影" },
+      { "id": "p20", "text": "电视" },
+      { "id": "p21", "text": "书" },
+      { "id": "p22", "text": "杂志" },
+      { "id": "p23", "text": "报纸" },
+      { "id": "p24", "text": "游戏" },
+      { "id": "p25", "text": "动画" },
+      { "id": "p26", "text": "漫画" },
+      { "id": "p27", "text": "运动" },
+      { "id": "p28", "text": "综合格斗" },
+      { "id": "p29", "text": "锻炼" },
+      { "id": "p30", "text": "户外" },
+      { "id": "p31", "text": "旅行" },
+      { "id": "p32", "text": "观光" },
+      { "id": "p33", "text": "主题公园" },
+      { "id": "p34", "text": "旅馆" },
+      { "id": "p35", "text": "婚礼" },
+      { "id": "p36", "text": "葬礼" },
+      { "id": "p37", "text": "汽车" },
+      { "id": "p38", "text": "飞机" },
+      { "id": "p39", "text": "自行车" },
+      { "id": "p40", "text": "船" },
+      { "id": "p41", "text": "火车" },
+      { "id": "p42", "text": "时尚" },
+      { "id": "p43", "text": "美容" },
+      { "id": "p44", "text": "放松" },
+      { "id": "p45", "text": "烹饪" },
+      { "id": "p46", "text": "点心" },
+      { "id": "p47", "text": "营养" },
+      { "id": "p48", "text": "酒" },
+      { "id": "p49", "text": "建筑" },
+      { "id": "p50", "text": "土木工程" },
+      { "id": "p51", "text": "室内装饰" },
+      { "id": "p52", "text": "医疗技术" },
+      { "id": "p53", "text": "康复" },
+      { "id": "p54", "text": "药" },
+      { "id": "p55", "text": "社会福利" },
+      { "id": "p56", "text": "学校教育" },
+      { "id": "p57", "text": "保育" },
+      { "id": "p58", "text": "政治" },
+      { "id": "p59", "text": "法律" },
+      { "id": "p60", "text": "语言学" },
+      { "id": "p61", "text": "国际" },
+      { "id": "p62", "text": "金融" },
+      { "id": "p63", "text": "商务" },
+      { "id": "p64", "text": "职业规划（就职和跳槽）" },
+      { "id": "p65", "text": "经营" },
+      { "id": "p66", "text": "不动产" },
+      { "id": "p67", "text": "性" },
+      { "id": "p68", "text": "电机" },
+      { "id": "p69", "text": "文具" },
+      { "id": "p70", "text": "心理" },
+      { "id": "p71", "text": "演艺" },
+      { "id": "p72", "text": "休闲" },
+      { "id": "p73", "text": "宣传" },
+      { "id": "p74", "text": "市场营销" },
+      { "id": "p75", "text": "化学" },
+      { "id": "p76", "text": "玩具" },
+      { "id": "p77", "text": "食品" },
+      { "id": "p78", "text": "电力" },
+      { "id": "p79", "text": "视频" },
+      { "id": "p80", "text": "经济" },
+      { "id": "p81", "text": "哲学" },
+      { "id": "p82", "text": "家庭" },
+      { "id": "p83", "text": "烟草" },
+      { "id": "p84", "text": "咨询" },
+      { "id": "p85", "text": "运输" },
+      { "id": "p86", "text": "宗教" },
+      { "id": "p87", "text": "文艺" },
+      { "id": "p88", "text": "办公" },
+      { "id": "p89", "text": "治安" },
+      { "id": "p90", "text": "护理" },
+      { "id": "p91", "text": "医疗" },
+      { "id": "p92", "text": "医疗辅助" },
+      { "id": "p93", "text": "恋爱" },
+      { "id": "p94", "text": "结婚" },
+      { "id": "p95", "text": "日常生活" },
+      { "id": "p96", "text": "饮食" },
+      { "id": "p97", "text": "行政" },
+      { "id": "p98", "text": "服务业" },
+      { "id": "p99", "text": "物流" },
+      { "id": "p100", "text": "营业、销售" }
+    ]
+  }
+}

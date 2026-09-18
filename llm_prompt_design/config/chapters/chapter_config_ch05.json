@@ -1,0 +1,834 @@
+{
+  "chapter_id": "ch05",
+  "chapter_title": "只要找到擅长的事，就可以应用到工作中",
+  "md_source": "chapter_md/第五章-只要找到_擅长的事_，就可以应用到工作中.md",
+  "core_concepts": [
+    "擅长的事=通过无意识的思考、感情和行动模式取得成果（是习惯，不是耀眼的才华）",
+    "重新定义：擅长的事是『习惯』，本身无好坏；用对地方是优点，用错地方是缺点",
+    "视角转换：努力改变缺点 → 努力发挥优点；把『……所以』换成『正因为……』",
+    "自我提升类图书陷阱：学的是作者优点的用法，自己的成功法则只存在于自己身上",
+    "强化长处：发挥长处的效率远高于弥补短处（速读研究 B 组提升近 8 倍）；星角比喻",
+    "找到 10 个长处（理想 20 个），用 ◎〇△ 三级评价：◎有充实感且与成功有关 / 〇有充实感 / △目前不确定",
+    "《使用说明书》：归纳长处，第七章结合『喜欢的事』得出『想做的事』（以◎级为主）"
+  ],
+  "guiding_questions": [
+    "你做什么事时会忘记时间、越做越有精神？",
+    "别人总夸你哪方面，而你自己觉得『这有什么，谁都会』？",
+    "如果不用考虑收入，你最想发挥自己哪方面的才能？"
+  ],
+  "exercises": [
+    {
+      "step_id": "step-1",
+      "name": "回答5个问题，找出擅长的事",
+      "instruction": "逐题长文作答书中精选的 5 个问题，唤醒你无意识中『擅长的事』。LLM 只映照、不判断，归纳出长处清单（talents，每项形如 {text, locked:false}；**step-1 不评级**，rating 由 step-2 引入），并给出整体映照点评（commentary）。约束：不臆造用户未透露的长处；输出严格 JSON（talents 为对象数组）。10+ 为引导目标，素材不足时返回已有证据并提示补充，不强凑数量。（可选）用户亦可从「擅长的事 30 问」题库追加回答作为补充素材，与 5 问一并作为映照依据；答几道都作为参考，不强制。",
+      "method": "书中精选5问（充实的体验 / 最近烦躁的事 / 问身边人长处 / 辞职后留恋的部分 / 取得的成果与做法），唤醒无意识的习惯型才能",
+      "input_schema": [
+        {
+          "name": "q1",
+          "label": "在迄今为止的人生中，你觉得充实的体验是什么？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q2",
+          "label": "最近让你感到烦躁或是心慌的是什么事？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q3",
+          "label": "问身边亲近的人：「你认为我的长处是什么？」",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q4",
+          "label": "如果明天辞职了，之前的工作中有没有你留恋的部分？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "q5",
+          "label": "你至今为止取得过什么样的成果，你是如何做到的呢？",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "talent_questions",
+          "label": "（可选）从「擅长的事 30 问」题库追加回答，作为发现素材的补充（题库由 questions 服务接入，本题回答存于 book_notes，运行前由前端按 q_order 取回填入本字段）",
+          "type": "list_of_items",
+          "required": false,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "question_id",
+                "type": "number",
+                "label": "题库题目全局序号 q_order（才能分类 31–60）"
+              },
+              {
+                "name": "question",
+                "type": "text",
+                "label": "题目原文（建议保存以抗题库更新）",
+                "optional": true
+              },
+              {
+                "name": "answer",
+                "type": "text",
+                "label": "用户回答"
+              }
+            ]
+          }
+        }
+      ],
+      "output": "commentary(映照点评) + talents(10+ 长处)",
+      "user_action": "用户逐题长文作答 5 问；LLM 不做判断，只映照与归纳。",
+      "llm_role": "assist",
+      "output_fields": [
+        {
+          "name": "talents",
+          "type": "editable_list",
+          "lockable": true,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "text",
+                "type": "text",
+                "label": "长处描述"
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "default": false
+              },
+              {
+                "name": "source",
+                "type": "string",
+                "label": "来源",
+                "optional": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "commentary",
+          "type": "markdown",
+          "readonly": true
+        }
+      ],
+      "few_shot_examples": [
+        {
+          "user": "我答着答着发现，朋友说我『特别能带动气氛』，但我自己觉得这没什么。",
+          "assistant": "这恰恰是『擅长的事』的典型信号——对你无意识、对别人稀缺。我们把它记为一个长处方向，后面步骤再验证它是不是真才能。"
+        }
+      ],
+      "step_role_id": "psychologist"
+    },
+    {
+      "step_id": "step-2",
+      "name": "评级与使用说明书",
+      "references": [
+        {
+          "from_exercise": "step-1",
+          "fields": [
+            "talents"
+          ]
+        }
+      ],
+      "input_schema": [
+        {
+          "name": "reference_strengths",
+          "label": "从「擅长的事100例清单」引用的长处（已加入本次参考列表；点击「运行 LLM 汇总」后会与上一步长处合并分析）",
+          "type": "list_of_items",
+          "required": false,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "text",
+                "type": "text",
+                "label": "一个参考长处"
+              }
+            ]
+          }
+        }
+      ],
+      "instruction": "审阅 LLM 汇总的 10+ 长处，给每项标 ◎〇△ 三级（◎有充实感且与成功有关 / 〇有充实感 / △目前还不确定），可增删、锁定。LLM 不替你定性、只建议评级。最终归纳成你的《使用说明书》概述（user_manual）。约束：保留已锁定项（preserve_output 中 locked=true 必须原样保留，不重新生成）；不臆造用户未透露的长处；建议◎〇△评级但不替用户下定论；输出严格 JSON（talents 为对象数组 [{text, rating, locked}]，引用自 100 例清单的项带 source:'100_examples'，与 step-1 长处合并去重 + user_manual 概述）。",
+      "method": "用户给每项长处打 ◎〇△；LLM 辅助、不判断；目标≥10个、理想20个；第七章将以◎级为主结合『喜欢的事』",
+      "output": "talents(带◎〇△评级，editable_list) + user_manual(使用说明书概述)",
+      "user_action": "用户审阅 LLM 生成的长处列表，标 ◎〇△、增删、锁定；LLM 不替用户定性。",
+      "llm_role": "assist",
+      "output_fields": [
+        {
+          "name": "talents",
+          "type": "editable_list",
+          "lockable": true,
+          "item_schema": {
+            "fields": [
+              {
+                "name": "text",
+                "type": "text",
+                "label": "长处描述"
+              },
+              {
+                "name": "rating",
+                "type": "string",
+                "label": "◎〇△ 评级",
+                "enum": [
+                  "◎",
+                  "〇",
+                  "△",
+                  ""
+                ],
+                "default": ""
+              },
+              {
+                "name": "locked",
+                "type": "boolean",
+                "default": false
+              },
+              {
+                "name": "source",
+                "type": "string",
+                "label": "来源",
+                "optional": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_manual",
+          "type": "markdown",
+          "readonly": true
+        }
+      ],
+      "few_shot_examples": [
+        {
+          "user": "我把『带动气氛』标了◎，『按计划执行』标了〇，『公开演讲』标了△不太确定。",
+          "assistant": "标得很好。书里说◎级长处是和成功挂钩、让你充实的——第七章组合『想做的事』时我们会以◎为主。△项可以留着，以后有体验再升级。"
+        }
+      ],
+      "step_role_id": "psychologist"
+    }
+  ],
+  "output_template": "完成两步后请呈现：①10+ 长处清单（带◎〇△评级）②你的《使用说明书》概述（如何把长处作为优点发挥）。",
+  "few_shot_examples": [
+    {
+      "user": "我总觉得找不到擅长的事。",
+      "assistant": "擅长的事往往是『无意识的习惯』，不是耀眼的才华。我们从 5 个具体问题慢慢挖——你做什么时会忘记时间、越做越精神？"
+    }
+  ],
+  "step_context": {
+    "references": []
+  },
+  "mentor_hooks": {
+    "focus": "才能识别：你天生被赋能的事",
+    "references": [
+      "work_purpose"
+    ],
+    "entry_prompt": "你第四章定了工作目的『{work_purpose}』。现在第五章我们找你天生被赋能的『擅长的事』——你平时做什么会忘记时间、别人总夸你却觉得『这没什么』？"
+  },
+  "ui_context": {
+    "references": [],
+    "strength_examples": [
+      {
+        "id": "s01",
+        "text": "灵活改变做法，用更有效的办法去实践",
+        "becomes_strength": "有效地开展工作",
+        "becomes_weakness": "没有变化就会感到厌烦"
+      },
+      {
+        "id": "s02",
+        "text": "能够举办大型活动",
+        "becomes_strength": "掌控全局的指挥官",
+        "becomes_weakness": "讨厌常规业务"
+      },
+      {
+        "id": "s03",
+        "text": "善于配置人才资源",
+        "becomes_strength": "组合高生产率团队",
+        "becomes_weakness": "让周围的人感觉混乱"
+      },
+      {
+        "id": "s04",
+        "text": "改善",
+        "becomes_strength": "补充自身不足的技能",
+        "becomes_weakness": "能和知识的人时会感到疲倦"
+      },
+      {
+        "id": "s05",
+        "text": "解决问题",
+        "becomes_strength": "察觉问题出现的根本原因并解决它",
+        "becomes_weakness": "没有需要解决的问题时无所适从"
+      },
+      {
+        "id": "s06",
+        "text": "直面问题",
+        "becomes_strength": "找出问题",
+        "becomes_weakness": "过于消极"
+      },
+      {
+        "id": "s07",
+        "text": "通过结构化提高效率",
+        "becomes_strength": "建立秩序",
+        "becomes_weakness": "无法应对突发状况"
+      },
+      {
+        "id": "s08",
+        "text": "习惯做必要的事情",
+        "becomes_strength": "按部就班",
+        "becomes_weakness": "难以应对变化"
+      },
+      {
+        "id": "s09",
+        "text": "制订计划",
+        "becomes_strength": "按照计划切实推进工作",
+        "becomes_weakness": "计划打乱后感到焦虑"
+      },
+      {
+        "id": "s10",
+        "text": "平等对待每个人",
+        "becomes_strength": "公平公正",
+        "becomes_weakness": "不允许偏视现象"
+      },
+      {
+        "id": "s11",
+        "text": "根据规则正确行事",
+        "becomes_strength": "遵守规则",
+        "becomes_weakness": "在没有规则的情况下陷入混乱"
+      },
+      {
+        "id": "s12",
+        "text": "制定公平的规则",
+        "becomes_strength": "制定大家都能接受的规则",
+        "becomes_weakness": "不允许例外"
+      },
+      {
+        "id": "s13",
+        "text": "深思熟虑",
+        "becomes_strength": "能在仔细讨论后做出没有风险的决断",
+        "becomes_weakness": "在没有判断标准时陷入烦恼"
+      },
+      {
+        "id": "s14",
+        "text": "不犯错",
+        "becomes_strength": "慎重制订计划",
+        "becomes_weakness": "工作速度慢"
+      },
+      {
+        "id": "s15",
+        "text": "引出他人的话题",
+        "becomes_strength": "需要花很长时间才能说出心里话",
+        "becomes_weakness": "隐瞒自己的想法"
+      },
+      {
+        "id": "s16",
+        "text": "为世界、人类而行动",
+        "becomes_strength": "伦理观念强",
+        "becomes_weakness": "对于不认可的工作提不起兴趣"
+      },
+      {
+        "id": "s17",
+        "text": "组织的前进方向出现偏差时，调整回原来的方向",
+        "becomes_strength": "有一贯性",
+        "becomes_weakness": "变得顽固"
+      },
+      {
+        "id": "s18",
+        "text": "有献身精神",
+        "becomes_strength": "不为金钱所动，受人信赖",
+        "becomes_weakness": "牺牲自己"
+      },
+      {
+        "id": "s19",
+        "text": "受到周围人的信赖",
+        "becomes_strength": "有责任感",
+        "becomes_weakness": "无法拒绝他人的请求"
+      },
+      {
+        "id": "s20",
+        "text": "重视任务的分配",
+        "becomes_strength": "很好地完成被分配的任务",
+        "becomes_weakness": "任务分配不明确时不知道该做什么"
+      },
+      {
+        "id": "s21",
+        "text": "遵守约定",
+        "becomes_strength": "严格遵守与他人的约定",
+        "becomes_weakness": "要求他人也要严格遵守约定"
+      },
+      {
+        "id": "s22",
+        "text": "不断地完成工作",
+        "becomes_strength": "尽可能完成更多的工作",
+        "becomes_weakness": "因无法回顾过去的工作而常感到焦虑"
+      },
+      {
+        "id": "s23",
+        "text": "不浪费时间",
+        "becomes_strength": "尽可能更有效率地工作",
+        "becomes_weakness": "成为工作狂"
+      },
+      {
+        "id": "s24",
+        "text": "活跃团队",
+        "becomes_strength": "有活力",
+        "becomes_weakness": "因要求他人跟自己一样活力四射，而使他人感到疲惫"
+      },
+      {
+        "id": "s25",
+        "text": "明确工作的先后顺序",
+        "becomes_strength": "只做有利于实现目标的事",
+        "becomes_weakness": "认为做与实现目标不相关的事（人际交往、其他的娱乐活动等）是浪费时间的，因此完全不做"
+      },
+      {
+        "id": "s26",
+        "text": "朝着目标径直前进",
+        "becomes_strength": "达到目标",
+        "becomes_weakness": "没有目标就没有动力"
+      },
+      {
+        "id": "s27",
+        "text": "对偏离路线的人进行修正",
+        "becomes_strength": "发现通往目标的路线",
+        "becomes_weakness": "遗漏目标以外的发现"
+      },
+      {
+        "id": "s28",
+        "text": "一边实践一边学习",
+        "becomes_strength": "有行动力",
+        "becomes_weakness": "思考前就开始行动"
+      },
+      {
+        "id": "s29",
+        "text": "不断尝试新事物",
+        "becomes_strength": "尝试新的事物",
+        "becomes_weakness": "经历本不用经历的失败"
+      },
+      {
+        "id": "s30",
+        "text": "号召周围的人行动",
+        "becomes_strength": "鼓励他人",
+        "becomes_weakness": "因太过着急而使他人感到疲惫"
+      },
+      {
+        "id": "s31",
+        "text": "有对手就会斗志昂扬",
+        "becomes_strength": "有胜负心",
+        "becomes_weakness": "感觉赢不了的时候就会放弃"
+      },
+      {
+        "id": "s32",
+        "text": "为了得到评价而做出成果",
+        "becomes_strength": "想得到可量化的评价",
+        "becomes_weakness": "拘泥于数字而忽视目的"
+      },
+      {
+        "id": "s33",
+        "text": "为战胜他人成为第一而竭尽全力，努力到最后",
+        "becomes_strength": "想成为第一",
+        "becomes_weakness": "过于关注胜负而忽视目的"
+      },
+      {
+        "id": "s34",
+        "text": "善用比喻吸引听众的注意力",
+        "becomes_strength": "能说会道",
+        "becomes_weakness": "如果没有真才实学会让人觉得肤浅"
+      },
+      {
+        "id": "s35",
+        "text": "通过语言让他人行动起来",
+        "becomes_strength": "语言有感染力",
+        "becomes_weakness": "说话浮夸"
+      },
+      {
+        "id": "s36",
+        "text": "善于鼓舞他人",
+        "becomes_strength": "有感染力",
+        "becomes_weakness": "想要支配他人"
+      },
+      {
+        "id": "s37",
+        "text": "精益求精",
+        "becomes_strength": "不满于现状",
+        "becomes_weakness": "专注于细节而无法前进"
+      },
+      {
+        "id": "s38",
+        "text": "决定理想后努力奋斗",
+        "becomes_strength": "有远大理想",
+        "becomes_weakness": "与理想相距甚远时失去自信"
+      },
+      {
+        "id": "s39",
+        "text": "喜欢发挥强项",
+        "becomes_strength": "通过强项取得很好的成绩",
+        "becomes_weakness": "完全不做没有兴趣或不擅长的事"
+      },
+      {
+        "id": "s40",
+        "text": "想成为重要的存在",
+        "becomes_strength": "在受到重视的环境里发挥作用",
+        "becomes_weakness": "在不被重视的情况下失去动力"
+      },
+      {
+        "id": "s41",
+        "text": "想得到他人的感谢",
+        "becomes_strength": "为得到他人的感谢而发挥作用",
+        "becomes_weakness": "当感到不被认可时失去动力"
+      },
+      {
+        "id": "s42",
+        "text": "想得到他人的关注",
+        "becomes_strength": "在被他人关注的地方发挥作用",
+        "becomes_weakness": "过于强调自己，而不善于团队协作"
+      },
+      {
+        "id": "s43",
+        "text": "带领团队",
+        "becomes_strength": "有自信、能承担责任",
+        "becomes_weakness": "不依靠他人"
+      },
+      {
+        "id": "s44",
+        "text": "有挑战精神",
+        "becomes_strength": "相信自己的潜力",
+        "becomes_weakness": "被他人认为自以为是"
+      },
+      {
+        "id": "s45",
+        "text": "自发地行动",
+        "becomes_strength": "走自己的路",
+        "becomes_weakness": "不听取他人意见"
+      },
+      {
+        "id": "s46",
+        "text": "认识新人",
+        "becomes_strength": "被人喜欢",
+        "becomes_weakness": "怕被人讨厌"
+      },
+      {
+        "id": "s47",
+        "text": "帮助建立人与人的联系",
+        "becomes_strength": "联系人",
+        "becomes_weakness": "被重视深交的人认为是肤浅的"
+      },
+      {
+        "id": "s48",
+        "text": "建立庞大的关系网",
+        "becomes_strength": "广交朋友",
+        "becomes_weakness": "无法拒绝他人的请求"
+      },
+      {
+        "id": "s49",
+        "text": "善于控制他人",
+        "becomes_strength": "强势主张自己的意见",
+        "becomes_weakness": "被认为是强权的"
+      },
+      {
+        "id": "s50",
+        "text": "掌握主动权",
+        "becomes_strength": "善于做指示",
+        "becomes_weakness": "不愿被人指点；善于把控事态的发展"
+      },
+      {
+        "id": "s51",
+        "text": "通过制定明确的目标来感染他人",
+        "becomes_strength": "有领导力",
+        "becomes_weakness": "引起不必要的对立"
+      },
+      {
+        "id": "s52",
+        "text": "能对理所当然的事情心存感激",
+        "becomes_strength": "可以通过直觉找出事物间的关联性",
+        "becomes_weakness": "不善于向人解释这些关联"
+      },
+      {
+        "id": "s53",
+        "text": "给人安心感",
+        "becomes_strength": "留有余地",
+        "becomes_weakness": "因看上去比较平和，所以有可能被他人误以为是没有干劲的"
+      },
+      {
+        "id": "s54",
+        "text": "是整体中的一部分",
+        "becomes_strength": "感觉到与世界的联系",
+        "becomes_weakness": "当不被当作个体而被认为是不同寻常的、偏离现实的时能发挥作用"
+      },
+      {
+        "id": "s55",
+        "text": "善于做出色的听众",
+        "becomes_strength": "善于让人说出心里话",
+        "becomes_weakness": "陷入他人消极的情感中"
+      },
+      {
+        "id": "s56",
+        "text": "共情能力强",
+        "becomes_strength": "观察他人的情绪",
+        "becomes_weakness": "认为他人应该与自己一样容易产生共情而感叹“为什么其他人就体会不到呢”"
+      },
+      {
+        "id": "s57",
+        "text": "善于帮助他人",
+        "becomes_strength": "站在他人的角度思考",
+        "becomes_weakness": "无法说真心话"
+      },
+      {
+        "id": "s58",
+        "text": "能够合理安排，使每个人都能发挥自己长处",
+        "becomes_strength": "发现他人的长处",
+        "becomes_weakness": "太过重视个人而牺牲团队整体的进度"
+      },
+      {
+        "id": "s59",
+        "text": "重视多样性",
+        "becomes_strength": "发现他人的个性",
+        "becomes_weakness": "讨厌常规"
+      },
+      {
+        "id": "s60",
+        "text": "能够根据每个人的特点而采取细致入微的应对方式",
+        "becomes_strength": "观察人性",
+        "becomes_weakness": "因对每个人都采取不同的应对方式而导致时间不够用"
+      },
+      {
+        "id": "s61",
+        "text": "一对一建立深层联系，像重视家人那样",
+        "becomes_strength": "喜欢亲密的关系",
+        "becomes_weakness": "偏袒关系好的人"
+      },
+      {
+        "id": "s62",
+        "text": "重视工作上的伙伴",
+        "becomes_strength": "与关系好的人一起工作时充满力量",
+        "becomes_weakness": "在看重形式的职场无法较好地开展工作"
+      },
+      {
+        "id": "s63",
+        "text": "诚实且受信赖",
+        "becomes_strength": "建立稳固的人际关系",
+        "becomes_weakness": "需要花费时间，一对一地建立关系"
+      },
+      {
+        "id": "s64",
+        "text": "相信他人的潜力",
+        "becomes_strength": "能够耐心地鼓励他人",
+        "becomes_weakness": "让他人在不适合自己的领域中努力"
+      },
+      {
+        "id": "s65",
+        "text": "注意到他人微小的进步并告诉他",
+        "becomes_strength": "关注他人的成长",
+        "becomes_weakness": "忽视自己"
+      },
+      {
+        "id": "s66",
+        "text": "为他人的成长加油鼓气",
+        "becomes_strength": "让他人注意到自己能做的事",
+        "becomes_weakness": "变得多管闲事"
+      },
+      {
+        "id": "s67",
+        "text": "善于应对纠纷，善于调停",
+        "becomes_strength": "找到双方能达成一致的地方前进",
+        "becomes_weakness": "就算与他人的意见不同，为避免出现纠纷也会选择牺牲个人的想法"
+      },
+      {
+        "id": "s68",
+        "text": "善于协商做出决定",
+        "becomes_strength": "避免对立",
+        "becomes_weakness": "被认为是没有主见的"
+      },
+      {
+        "id": "s69",
+        "text": "从现实的角度推进工作",
+        "becomes_strength": "现实",
+        "becomes_weakness": "不擅长出主意"
+      },
+      {
+        "id": "s70",
+        "text": "适应组织",
+        "becomes_strength": "适应环境",
+        "becomes_weakness": "被他人的要求左右"
+      },
+      {
+        "id": "s71",
+        "text": "善于应对突发状况",
+        "becomes_strength": "变通",
+        "becomes_weakness": "对可能预测到的、重复出现的事感到厌倦"
+      },
+      {
+        "id": "s72",
+        "text": "调整自己适应当下的状况",
+        "becomes_strength": "重视当下",
+        "becomes_weakness": "不擅长制订计划，每天随波逐流"
+      },
+      {
+        "id": "s73",
+        "text": "不管什么样的人，都能将他安排到合适的位置来提升团队合作水平",
+        "becomes_strength": "扩大组织",
+        "becomes_weakness": "讨厌脱离伙伴"
+      },
+      {
+        "id": "s74",
+        "text": "成为团队的核心",
+        "becomes_strength": "宽容",
+        "becomes_weakness": "不擅长说严肃的话"
+      },
+      {
+        "id": "s75",
+        "text": "让团队有整体感",
+        "becomes_strength": "心胸宽广",
+        "becomes_weakness": "与特立独行的人产生冲突"
+      },
+      {
+        "id": "s76",
+        "text": "总是充满活力",
+        "becomes_strength": "乐观",
+        "becomes_weakness": "不善于做细致的工作"
+      },
+      {
+        "id": "s77",
+        "text": "善于激发他人的斗志",
+        "becomes_strength": "激励他人",
+        "becomes_weakness": "被认为是不进行深入思考的人"
+      },
+      {
+        "id": "s78",
+        "text": "意志消沉时睡一觉，第二天就能恢复",
+        "becomes_strength": "关注好的一面",
+        "becomes_weakness": "假装看不到不好的地方或问题所在"
+      },
+      {
+        "id": "s79",
+        "text": "不断学习新技术",
+        "becomes_strength": "掌握新的东西",
+        "becomes_weakness": "不重视输出就只停留在学习阶段"
+      },
+      {
+        "id": "s80",
+        "text": "学习最先进的技术",
+        "becomes_strength": "学习最前沿的东西",
+        "becomes_weakness": "对知识了解到一定程度后就感到厌倦"
+      },
+      {
+        "id": "s81",
+        "text": "引导人类走向更好的未来",
+        "becomes_strength": "常心存希望",
+        "becomes_weakness": "因为说明不充分而无法传达给他人"
+      },
+      {
+        "id": "s82",
+        "text": "再现过去成功的模式",
+        "becomes_strength": "回顾过去",
+        "becomes_weakness": "被过往束缚"
+      },
+      {
+        "id": "s83",
+        "text": "不会失去目标",
+        "becomes_strength": "回望原点",
+        "becomes_weakness": "因获取信息不足而不知道原点所在而无法行动"
+      },
+      {
+        "id": "s84",
+        "text": "善于调查",
+        "becomes_strength": "收集信息",
+        "becomes_weakness": "不重视输出，只会不断输入信息"
+      },
+      {
+        "id": "s85",
+        "text": "具备多领域的知识",
+        "becomes_strength": "对很多领域充满好奇",
+        "becomes_weakness": "不深入研究的话，知识只停留在表面"
+      },
+      {
+        "id": "s86",
+        "text": "及时提供他人需要的信息",
+        "becomes_strength": "利用收集的信息做出成果",
+        "becomes_weakness": "对信息不做整理就无法灵活利用，使信息失去价值"
+      },
+      {
+        "id": "s87",
+        "text": "建立体系并传授给别人",
+        "becomes_strength": "系统化思考",
+        "becomes_weakness": "只思考不行动"
+      },
+      {
+        "id": "s88",
+        "text": "找到推进事物发展的最佳途径",
+        "becomes_strength": "找到最佳路线",
+        "becomes_weakness": "凭借直觉找到达成目的的方法，认为其他人也是一样的而疏于信息共享"
+      },
+      {
+        "id": "s89",
+        "text": "因为能想到多个方法，所以在取得成功前，会耐心寻找可能的方案",
+        "becomes_strength": "找到多条路线",
+        "becomes_weakness": "不愿意总用同样的方法来推进事物的发展"
+      },
+      {
+        "id": "s90",
+        "text": "善于想办法",
+        "becomes_strength": "抽象思考",
+        "becomes_weakness": "因为思维跳跃，所以会被人说“完全不懂你在讲什么”"
+      },
+      {
+        "id": "s91",
+        "text": "擅长创造，有创新思维",
+        "becomes_strength": "在没有联系的事物间找共同点",
+        "becomes_weakness": "非现实性的"
+      },
+      {
+        "id": "s92",
+        "text": "喜欢新事物",
+        "becomes_strength": "有好奇心",
+        "becomes_weakness": "容易厌倦"
+      },
+      {
+        "id": "s93",
+        "text": "从各个角度思考事物并找到其本质所在",
+        "becomes_strength": "喜欢思考",
+        "becomes_weakness": "花太长时间思考而导致行动变慢"
+      },
+      {
+        "id": "s94",
+        "text": "通过提问让人深刻思考",
+        "becomes_strength": "对自己或他人提问",
+        "becomes_weakness": "思考时因忽略周围的情况而显得很冷漠"
+      },
+      {
+        "id": "s95",
+        "text": "通过梳理，把复杂的事情简单地说明白",
+        "becomes_strength": "仔细思考",
+        "becomes_weakness": "没有整理好思绪的话，无法很好地进行说明"
+      },
+      {
+        "id": "s96",
+        "text": "善于分析情报",
+        "becomes_strength": "喜欢事实",
+        "becomes_weakness": "过于注重分析而无法行动"
+      },
+      {
+        "id": "s97",
+        "text": "客观",
+        "becomes_strength": "对于感性的问题也能冷静公平地处理",
+        "becomes_weakness": "忽视感情"
+      },
+      {
+        "id": "s98",
+        "text": "能够用逻辑判断",
+        "becomes_strength": "有逻辑",
+        "becomes_weakness": "因总问“为什么”而被人认为是多疑的"
+      },
+      {
+        "id": "s99",
+        "text": "根据未来反推现在，再采取行动",
+        "becomes_strength": "想象未来",
+        "becomes_weakness": "不考虑实现的可行性"
+      },
+      {
+        "id": "s100",
+        "text": "通过谈论理想来提升团队的动力",
+        "becomes_strength": "从理想中获得能量",
+        "becomes_weakness": "没有付诸实践的话，会被认为是空想家，提出的想法也会被轻视"
+      }
+    ]
+  }
+}
