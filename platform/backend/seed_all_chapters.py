@@ -6,8 +6,15 @@ Run once after backend restart:
 import json
 import os
 import sys
+from pathlib import Path
 
-CHAPTERS_ROOT = r'D:\AI_Project\What_Want\llm_prompt_design\config\chapters'
+# Resolve relative to this file: <repo>/platform/backend/seed_all_chapters.py
+#   parents[0]=backend  parents[1]=platform  parents[2]=<repo root>
+# Override with WW_CHAPTERS_ROOT if your chapter configs live elsewhere.
+CHAPTERS_ROOT = os.getenv(
+    'WW_CHAPTERS_ROOT',
+    str(Path(__file__).resolve().parents[2] / 'llm_prompt_design' / 'config' / 'chapters'),
+)
 CHAPTERS = ['ch01', 'ch02', 'ch03', 'ch04', 'ch05', 'ch06', 'ch07', 'ch08']
 
 

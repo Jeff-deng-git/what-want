@@ -52,3 +52,22 @@ platform/backend/tests/_tmp/
 # ---- 本地备份文件与过程交接件不入库 ----
 .gitignore.bak*
 HANDOFF.md
+
+# ---- 设计侧过程件：设计文档 / 交互原型 / 备份（本地保留，公开仓库只留可运行内容）----
+# 运行时真正需要的只有：platform/backend、platform/frontend、llm_prompt_design/config
+/llm_prompt_design/docs/
+/llm_prompt_design/backups/
+/llm_prompt_design/README.md
+/llm_prompt_design/assets/
+/platform/prototype/
+/platform/PROGRESS.md
+**/backups/
+
+# ---- AI 工具配置与过程记录 ----
+/platform/.claude/
+/platform/CONTEXT_CHECKPOINT.md*
+/platform/PROGRESS*
+/platform/REVIEW.md
+/fix_html_fig7-2.py
+*.bak-*
+*.revert-*

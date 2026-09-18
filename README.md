@@ -73,22 +73,19 @@ export DEEPSEEK_API_KEY="sk-..."        # 或对应 provider 的 <PROVIDER>_API_
 
 ```
 What_Want/
-├── llm_prompt_design/   设计侧交付物
-│   ├── docs/            8 份 PRD、逐章落地设计、架构决策记录
-│   ├── config/          章节配置 JSON + 统一 Schema（chapters/ 为运行时权威契约）
-│   └── assets/          设计图
+├── llm_prompt_design/
+│   └── config/          章节配置 JSON + 统一 Schema（chapters/ 是运行时权威契约）
 └── platform/
     ├── backend/         FastAPI 服务（routers / runtime / services / tests）
     ├── frontend/        单页前端
-    ├── prototype/       各章交互原型（HTML，可直接在浏览器打开）
-    └── SPEC.md / PROGRESS.md
+    └── SPEC.md          架构规格
 ```
 
-设计侧与开发侧的分工：设计侧出方案（页面逻辑、字段契约、数据库设计），开发侧做实施。每章的落地设计文档是开发交接的唯一入口，字段契约以 `config/chapters/chapter_config_chXX.json` 为权威。
+加章节或改流程不需要动代码：编辑 `config/chapters/` 下的 JSON，重新执行 `seed_all_chapters.py` 即可。字段契约以该目录下的配置为权威。
 
 ## 当前状态
 
-第一章到第八章的流程设计与后端实现已完成，配置驱动的运行时、跨章档案、失效隔离机制均已落地。各章交互原型在 `platform/prototype/` 下可直接打开预览。
+第一章到第八章的流程设计与后端实现已完成，配置驱动的运行时、跨章档案、失效隔离机制均已落地。
 
 ## 说明
 
