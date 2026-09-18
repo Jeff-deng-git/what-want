@@ -42,4 +42,8 @@ data/*.db
 # ---- 练习数据与调试日志（含个人答案，不入库）----
 *.log
 platform/backend/test_*.json
-platform/backend/.pytest*/
+platform/backend/.pytest*
+platform/backend/.tmp/
+platform/backend/tests/_tmp/
+*.err
+*.out
