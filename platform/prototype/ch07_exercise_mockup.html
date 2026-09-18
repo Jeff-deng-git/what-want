@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ch07 找到真正想做的事 · 原型</title>
+<style>
+  :root{
+    --paper:#f6efde; --paper2:#efe6cf; --ink:#2a2620; --ink-soft:#6b6253;
+    --rule:#d8cbb0; --ochre:#7a4d2b; --ochre-soft:#a9794f;
+    --green:#3f7d52; --blue:#3a6ea5; --gold:#b8893b;
+    --sans:"Sarasa Gothic SC","PingFang SC","Microsoft YaHei",sans-serif;
+    --serif:"Songti SC","SimSun",serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.7;}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:var(--paper2);border-bottom:1px solid var(--rule);}
+  .top h1{font-family:var(--serif);font-size:19px;margin:0;color:var(--ochre);}
+  .role-chip{font-size:12px;background:#fff;border:1px solid var(--rule);border-radius:20px;padding:3px 10px;color:var(--ink-soft);}
+  .role-chip span{color:var(--ochre);}
+  .wrap{display:grid;grid-template-columns:180px 1fr 372px;gap:0;align-items:stretch;min-height:calc(100vh - 56px);}
+  .nav{padding:18px 14px;border-right:1px solid var(--rule);background:var(--paper2);display:flex;flex-direction:column;gap:10px;}
+  .nav .nh{font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .nav .step{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;background:#fff;cursor:pointer;font-size:14px;}
+  .nav .step.on{background:var(--ochre);color:#fff;border-color:var(--ochre);}
+  .nav .step .dot{width:20px;height:20px;border-radius:50%;background:var(--paper2);color:var(--ink-soft);display:flex;align-items:center;justify-content:center;font-size:12px;flex:0 0 auto;}
+  .nav .step.on .dot{background:#fff;color:var(--ochre);}
+  .nav .step.done .dot{background:var(--green);color:#fff;}
+  .nav .step small{display:block;font-size:11px;color:var(--ink-soft);}
+  .nav .step.on small{color:rgba(255,255,255,.8);}
+  .book{padding:26px 30px;border-right:1px solid var(--rule);background:linear-gradient(180deg,var(--paper),var(--paper2));overflow:auto;}
+  .book h2{font-family:var(--serif);color:var(--ochre);font-size:17px;margin:18px 0 8px;}
+  .book p{margin:8px 0;color:var(--ink);}
+  .def-list{margin:6px 0;padding-left:20px;}
+  .def-list li{margin:5px 0;}
+  .quote{background:#fff;border-left:4px solid var(--ochre);padding:12px 16px;margin:14px 0;border-radius:6px;font-size:14px;color:var(--ink-soft);}
+  .quote b{color:var(--ochre);}
+  .figcap{font-size:12px;color:var(--ink-soft);margin-top:6px;}
+  .upstream{background:#fff;border:1px dashed var(--ochre-soft);border-radius:8px;padding:12px 16px;margin:16px 0;}
+  .upstream h3{margin:0 0 8px;font-size:13px;color:var(--ochre);}
+  .chip{display:inline-block;background:var(--paper2);border:1px solid var(--rule);border-radius:14px;padding:2px 9px;margin:3px;font-size:12px;}
+  .chip.rate{background:#fbeede;color:var(--ochre);font-weight:600;}
+  .right{padding:18px 22px;display:flex;flex-direction:column;gap:12px;overflow:auto;}
+  .panel{background:#fff;border:1px solid var(--rule);border-radius:10px;padding:16px 18px;}
+  .panel h3{margin:0 0 4px;font-size:15px;color:var(--ochre);}
+  .counter{font-size:12px;color:var(--ink-soft);margin:10px 0 6px;}
+  .btn{padding:9px 14px;border:none;border-radius:8px;background:var(--ochre);color:#fff;cursor:pointer;font-size:14px;font-family:var(--sans);}
+  .btn.sm{padding:6px 10px;font-size:13px;}
+  .btn.ghost{background:#fff;color:var(--ochre);border:1px solid var(--ochre);}
+  .btn:disabled{background:var(--rule);color:var(--ink-soft);cursor:not-allowed;}
+  .card{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;margin:8px 0;background:var(--paper);}
+  .card .ttl{font-weight:600;color:var(--ink);}
+  .card .src{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+  .card .src b{color:var(--green);}
+  .card .src i{color:var(--blue);font-style:normal;}
+  .badge{display:inline-block;font-size:11px;border-radius:10px;padding:1px 8px;margin-left:6px;}
+  .badge.real{background:#e7f1ea;color:var(--green);}
+  .badge.hobby{background:#e9eef7;color:var(--blue);}
+  .badge.und{background:#f0ece1;color:var(--ink-soft);}
+  .lockbtn{float:right;font-size:11px;border:1px solid var(--rule);background:#fff;border-radius:10px;padding:1px 8px;cursor:pointer;color:var(--ink-soft);}
+  .lockbtn.on{background:#fbeede;color:var(--ochre);border-color:var(--ochre);}
+  .filters{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;}
+  .filters button{font-size:12px;padding:4px 10px;border:1px solid var(--rule);background:#fff;border-radius:14px;cursor:pointer;color:var(--ink-soft);}
+  .filters button.on{background:var(--ink-soft);color:#fff;border-color:var(--ink-soft);}
+  .filter-banner{background:#fbeede;border:1px solid var(--ochre-soft);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--ink);}
+  .filter-banner b{color:var(--ochre);}
+  select{font-family:var(--sans);font-size:13px;padding:3px 6px;border-radius:6px;border:1px solid var(--rule);}
+  textarea{width:100%;min-height:64px;border:1px solid var(--rule);border-radius:8px;padding:8px;font-family:var(--sans);font-size:13px;resize:vertical;}
+  .ribbon{display:inline-block;background:var(--green);color:#fff;font-size:11px;border-radius:6px;padding:2px 8px;}
+  .submitted{display:inline-block;background:var(--green);color:#fff;font-size:11px;border-radius:10px;padding:1px 8px;margin-left:8px;}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.3s;pointer-events:none;}
+  .toast.show{opacity:.95;}
+  .saved{font-size:11px;color:var(--ink-soft);margin-top:6px;}
+  .submitbar{display:flex;align-items:center;gap:10px;margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>第七章 · 找到真正想做的事，活出真实的自己</h1>
+  <span class="role-chip" id="roleChip">导师上下文 <span>🔒</span></span>
+</div>
+<div class="wrap">
+  <div class="nav">
+    <div class="nh">本章步骤</div>
+    <div class="step on" id="nav1" onclick="switchStep(1)"><span class="dot">1</span><div>组合<span class="dot" style="display:none"></span><small>喜欢×擅长→候选</small></div></div>
+    <div class="step" id="nav2" onclick="switchStep(2)"><span class="dot">2</span><div>筛选定稿<small>工作目的→两桶</small></div></div>
+  </div>
+
+  <div class="book">
+    <div class="quote"><b>POINT · 不要为将来而活</b><br>找到目前最想做的事并认真对待，人才会成长。不要先学"对将来有用的技能"再找想做的事——那和"为了进好大学而学习"没两样。</div>
+    <h2>想做的事，即使是假设也没关系</h2>
+    <p>最初只是假设的也没关系。设立假设 → 行动 → 回顾 → 修正，螺旋上升逐渐接近"真正想做的事"。在没有假设的情况下贸然行动，找到想做的事的可能性微乎其微——那是赌博。</p>
+    <div class="quote"><b>POINT</b><br>找到"想做的事"，不要拖延。</div>
+    <h2>组合公式</h2>
+    <ul class="def-list">
+      <li><b>喜欢的事 × 擅长的事</b>：先假设出"想做的事"候选（此阶段量比质重要，尽情写）。</li>
+      <li>每条候选最好用"<b>一个……的人</b>"句式，并标明它来自哪条喜欢、哪项擅长。</li>
+    </ul>
+    <div style="background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px;text-align:center;color:var(--ink-soft);font-size:13px;margin:10px 0;">
+      ［图 7-2 自由组合矩阵占位：喜欢的事 × 擅长的事 的交叉格］
+    </div>
+    <div class="figcap">图 7-2（P.193）：组合方式是自由的；这一阶段优先保证数量。</div>
+    <h2>用工作目的筛选</h2>
+    <p>第四章定的"工作目的"是过滤器：与客户只为"价值"付钱同理，只有与工作目的直接相关的候选，才适合作为<b>真正想做的事</b>（作为工作）；无关但仍吸引你的，归为<b>作为兴趣的想做的事</b>。</p>
+    <div style="background:#fff;border:1px solid var(--rule);border-radius:8px;padding:14px;text-align:center;color:var(--ink-soft);font-size:13px;margin:10px 0;">
+      ［图 7-3 工作目的过滤示意占位：候选 → 与目的相关? 真正 / 无关? 兴趣］
+    </div>
+    <div class="figcap">图 7-3（P.194–198）：用工作目的把候选筛成两桶。</div>
+    <div class="upstream">
+      <h3>导师上下文已带入（上游产出）</h3>
+      <div><b style="color:var(--green)">第五章 擅长之事（◎级优先）</b><br>
+        <span class="chip rate">◎ 共情式梳理</span><span class="chip rate">◎ 把复杂讲简单</span><span class="chip rate">〇 在混乱中找结构</span></div>
+      <div style="margin-top:8px"><b style="color:var(--blue)">第六章 喜欢的事（方面）</b><br>
+        <span class="chip">自我认知 · 帮人认识自己</span><span class="chip">自然生命 · 观鸟</span><span class="chip">亲手建立秩序 · 整理收纳</span></div>
+      <div style="margin-top:8px"><b style="color:var(--gold)">第四章 工作目的</b><br>
+        <span class="chip" style="background:#fbeede;color:var(--ochre)">帮更多人找到自己真正想做的事</span></div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="panel" id="step1Panel">
+      <h3>组合喜欢 × 擅长，假设想做的事 <span class="submitted" id="sub1" style="display:none">已提交</span></h3>
+      <p style="font-size:13px;color:var(--ink-soft);margin:4px 0 10px">读取导师上下文，自由交叉组合 8–15 条候选。每条标明喜欢的来源与擅长的来源。</p>
+      <button class="btn" id="run1" onclick="runStep1()">让职业规划师组合喜欢×擅长，假设想做的事</button>
+      <div class="counter">已生成 <b id="c1n">0</b> / 8–15 条候选</div>
+      <div id="idealList"></div>
+      <div class="saved" id="saved1"></div>
+      <div class="submitbar">
+        <button class="btn sm ghost" id="sb1" onclick="submitStep(1)" disabled>提交本步</button>
+        <span class="saved" id="sb1t"></span>
+      </div>
+    </div>
+
+    <div class="panel" id="step2Panel" style="display:none">
+      <h3>用工作目的筛选，定稿真正 / 兴趣 <span class="submitted" id="sub2" style="display:none">已提交</span></h3>
+      <div class="filter-banner">你的工作目的：<b>帮更多人找到自己真正想做的事</b>。与它有直接关系的候选 → 真正想做的事<span style="color:var(--ink-soft)">（作为工作）</span>；无关但仍吸引你的 → 作为兴趣的想做的事。</div>
+      <div class="filters">
+        <button class="on" onclick="setFilter('all',this)">全部</button>
+        <button onclick="setFilter('真正想做的事',this)">真正想做的事</button>
+        <button onclick="setFilter('作为兴趣的想做的事',this)">作为兴趣的想做的事</button>
+        <button onclick="setFilter('未定',this)">未定</button>
+      </div>
+      <button class="btn sm ghost" onclick="runStep2()">让导师用工作目的给分桶建议</button>
+      <div id="idealList2"></div>
+      <div class="saved" id="saved2"></div>
+      <div style="margin-top:14px;display:none" id="naCard">
+        <span class="ribbon">下一步行动 / 复盘计划</span>
+        <textarea id="naText" placeholder="先试最想做的假设，行动中回顾、修正……"></textarea>
+        <div style="margin-top:8px"><button class="btn sm" onclick="exportList()">导出我的想做的事清单</button></div>
+      </div>
+      <div class="submitbar">
+        <button class="btn sm ghost" id="sb2" onclick="submitStep(2)" disabled>提交本步</button>
+        <span class="saved" id="sb2t"></span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STEP1_IDEAL = [
+  {title:'一个帮迷茫的人用对的话看清自己方向的人', like_source:'自我认知 · 帮人认识自己', strength_source:'把复杂讲简单（◎）', bucket:'未定', locked:false},
+  {title:'一个在混乱现场帮团队理出头绪的人', like_source:'亲手建立秩序 · 整理收纳', strength_source:'在混乱中找结构（〇）', bucket:'未定', locked:false},
+  {title:'一个陪人慢下来、重新看见自己的人', like_source:'自我认知 · 帮人认识自己', strength_source:'共情式梳理（◎）', bucket:'未定', locked:false},
+  {title:'一个把观鸟式的耐心带进咨询的人', like_source:'自然生命 · 观鸟', strength_source:'共情式梳理（◎）', bucket:'未定', locked:false},
+  {title:'一个用简单框架帮人做人生整理的人', like_source:'亲手建立秩序 · 整理收纳', strength_source:'把复杂讲简单（◎）', bucket:'未定', locked:false}
+];
+let ideal = [];
+let filterMode = 'all';
+let submitted = {1:false, 2:false};
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function nowStr(){return '上次保存于 '+new Date().toLocaleTimeString('zh-CN');}
+
+function switchStep(n){
+  document.getElementById('nav1').classList.toggle('on',n===1);
+  document.getElementById('nav2').classList.toggle('on',n===2);
+  document.getElementById('step1Panel').style.display = n===1?'block':'none';
+  document.getElementById('step2Panel').style.display = n===2?'block':'none';
+  document.getElementById('roleChip').textContent = (n===1?'职业规划师':'导师')+' 上下文 🔒';
+  if(n===2) render2();
+}
+
+function runStep1(){
+  ideal = STEP1_IDEAL.map(x=>({...x}));
+  document.getElementById('c1n').textContent = ideal.length;
+  render1();
+  document.getElementById('saved1').textContent = nowStr();
+  document.getElementById('sb1').disabled = ideal.length===0;
+  toast('已组合 '+ideal.length+' 条候选（草稿，可编辑/锁定）');
+}
+
+function render1(){
+  document.getElementById('idealList').innerHTML = ideal.map((x,i)=>`
+    <div class="card">
+      <button class="lockbtn ${x.locked?'on':''}" onclick="toggleLock(${i})">${x.locked?'已锁':'锁定'}</button>
+      <div class="ttl">${x.title}</div>
+      <div class="src">喜欢：<b>${x.like_source}</b> ｜ 擅长：<i>${x.strength_source}</i></div>
+    </div>`).join('');
+}
+function toggleLock(i){ideal[i].locked=!ideal[i].locked;render1();document.getElementById('saved1').textContent=nowStr();toast(ideal[i].locked?'已锁定，运行时不覆盖':'已解锁');}
+
+function runStep2(){
+  const suggest = ['真正想做的事','作为兴趣的想做的事','真正想做的事','作为兴趣的想做的事','真正想做的事'];
+  ideal.forEach((x,i)=>{ if(!x.locked) x.bucket = suggest[i%suggest.length]; });
+  render2();
+  document.getElementById('naCard').style.display='block';
+  document.getElementById('saved2').textContent = nowStr();
+  document.getElementById('sb2').disabled = ideal.length===0;
+  toast('已按工作目的给分桶建议（不替你定档，可改）');
+}
+
+function setFilter(m,btn){
+  filterMode=m;
+  document.querySelectorAll('.filters button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  render2();
+}
+function render2(){
+  const list = ideal.filter(x=>filterMode==='all'||x.bucket===filterMode);
+  document.getElementById('idealList2').innerHTML = list.map((x,i)=>{
+    const gi = ideal.indexOf(x);
+    const bd = x.bucket==='真正想做的事'?'real':x.bucket==='作为兴趣的想做的事'?'hobby':'und';
+    return `<div class="card">
+      <button class="lockbtn ${x.locked?'on':''}" onclick="toggleLock2(${gi})">${x.locked?'已锁':'锁定'}</button>
+      <div class="ttl">${x.title}<span class="badge ${bd}">${x.bucket}</span></div>
+      <div class="src">喜欢：<b>${x.like_source}</b> ｜ 擅长：<i>${x.strength_source}</i></div>
+      <div style="margin-top:6px">归类：
+        <select onchange="setBucket(${gi},this.value)">
+          <option ${x.bucket==='未定'?'selected':''}>未定</option>
+          <option ${x.bucket==='真正想做的事'?'selected':''}>真正想做的事</option>
+          <option ${x.bucket==='作为兴趣的想做的事'?'selected':''}>作为兴趣的想做的事</option>
+        </select>
+      </div>
+    </div>`;
+  }).join('') || '<div class="src">该分类下暂无候选。</div>';
+}
+function setBucket(i,v){ideal[i].bucket=v;render2();document.getElementById('saved2').textContent=nowStr();}
+function toggleLock2(i){ideal[i].locked=!ideal[i].locked;render2();document.getElementById('saved2').textContent=nowStr();}
+
+function submitStep(n){
+  submitted[n]=true;
+  document.getElementById('sub'+n).style.display='inline-block';
+  document.getElementById('nav'+n).classList.add('done');
+  const sb=document.getElementById('sb'+n);
+  sb.disabled=true; sb.textContent='已提交（运行时不调 LLM）';
+  document.getElementById('sb'+n+'t').textContent='提交于 '+new Date().toLocaleTimeString('zh-CN')+'，草稿已封存';
+  toast('第'+n+'步已提交；如需修改请先回到本步编辑');
+}
+
+function exportList(){
+  const real = ideal.filter(x=>x.bucket==='真正想做的事').map(x=>'· '+x.title).join('\n');
+  const hobby = ideal.filter(x=>x.bucket==='作为兴趣的想做的事').map(x=>'· '+x.title).join('\n');
+  const und = ideal.filter(x=>x.bucket==='未定').map(x=>'· '+x.title).join('\n');
+  const na = document.getElementById('naText').value || '（未填）';
+  const txt = `# 我的想做的事清单\n\n## 真正想做的事（作为工作）\n${real||'（无）'}\n\n## 作为兴趣的想做的事\n${hobby||'（无）'}\n\n## 尚未归类（建议尽快定档）\n${und||'（无）'}\n\n## 下一步行动 / 复盘计划\n${na}\n`;
+  const blob=new Blob([txt],{type:'text/markdown;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='我的想做的事清单.md';a.click();
+  toast('已导出《我的想做的事清单》（含未归类项）');
+}
+</script>
+</body>
+</html>

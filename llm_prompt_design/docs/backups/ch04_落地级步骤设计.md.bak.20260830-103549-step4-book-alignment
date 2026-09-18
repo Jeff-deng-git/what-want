@@ -1,0 +1,310 @@
+# 第四章 落地级步骤设计（ch04 价值观 / 重要的事）
+
+> 📌 **开发侧阅读入口（唯一交接文件）**：本文是「ch04 价值观（重要的事）」的权威设计契约，讲清**每一步用户做什么、产出什么、约束与 LLM 角色、跨步依赖**。开发交接**只需本文件 + 本文件路由到的文件**，不另发整包。
+> **本文与权威文件的分工（各管一层，本文为意图/索引层）**：
+> - **字段契约 / 运行时参数**（exercises、`input_schema` / `output_fields` 类型与 `lockable`/`readonly`、跨步 `references.from_exercise`、`mentor_hooks`/`references`）→ `config/chapters/chapter_config_ch04.json`（**权威源**：运行时读的是 `chapter_configs` 表中由本 JSON 灌入的 active 行，并非直接读本文件。改完本 JSON 后必须发布到 DB（seed/save）并跑 `scripts/check_config_consistency.py` 确认无漂移，否则会出现"文档已改、运行仍跑旧配置"的漂移）
+> - **本章 LLM 角色系统提示原文**（psychologist / career_counselor / mentor）→ `docs/PRD/PRD-ch4.md` §3.1
+> - **视觉与交互对齐**（5 步导航、思维导图分组、可控性 5Why、金字塔排序、工作目的卡、100 例抽屉）→ `platform/prototype/ch04_exercise_mockup.html`（可点击原型）；像素级见 Ardot 设计稿（fileId 待建，当前以 mockup 为交互参考）
+> - **原书第四章正文** → `chapter_md/第四章-找到指引人生的指南针：重要的事.md`
+> ⚠️ **冲突裁决**：若本文（尤其 §8 对 config 的描述）与实际 `chapter_config_ch04.json` 不一致，**以 config JSON 为准**——本文为解释性说明，可能因后续微调而滞后。
+
+## 0. 本章在全书旅程里的位置
+原书第四章（找到指引人生的指南针：重要的事）是全书**第一道价值观关卡**，也是 ch03 三要素里「重要」的深化章。全书结构：
+
+```
+ch1 误区 → ch2 内外标准 → ch3 三要素公式（框架/种子）
+   → ch4 重要(价值观) → ch5 擅长 → ch6 喜欢 → ch7 组合 → ch8 实践
+```
+
+- ch04 自身 = **5 个真实 step 级联**（step-1 5 问 → step-2 思维导图 → step-3 可控性转化 → step-4 金字塔排序 → step-5 工作目的），把「重要的事」从模糊感受澄清为可沉淀的跨章种子。
+- **上游依赖**：无硬性上游（seed 章可独立进入）。但 `mentor_hooks.references=["importance"]` 引用 ch3 的 `importance`，让刘老师开场回响「你第三章写的重要的事是…现在还最在乎吗？」，建立 ch3→ch4 连续性。
+- **下游产出**：
+  - `values`（= step-1 `top_values` 别名）、`ranked`、`work_purpose` 写入 `learner_profile`，供后续章引用；
+  - **ch7（组合）** 读 `work_purpose` 作为「真正想做的事」过滤器（必需）；
+  - **ch8（实践）** 读 `ranked` / `values` 增强成功宣言（可选）。
+- **与 ch03 的结构差异（务必注意）**：ch03 是「1 个 exercise 内部 4 阶段」；ch04 是「**5 个独立 exercise（step）**」，靠 config 的 `references.from_exercise` 级联。运行时由 `build_step_prompt` 从同章已 submitted 的 `step_runs.parsed_output` 取前序字段注入（详见 §2 / §5）。
+
+## 1. 一句话目标
+让用户通过 5 步，把模糊的「重要的事」澄清为：一组价值观关键词 → 思维导图分组 → 以自我为中心转化 → 优先级金字塔 → 一句话工作目的，并沉淀为跨章种子（`values` / `ranked` / `work_purpose`），供 ch7 组合、ch8 实践引用。
+
+## 2. 「一步还是多步」先说清（最关键）
+- **ch04 = 5 个真实 step（exercise），不是 1 步多阶段**。对开发侧说"ch4 有 5 步"是准确的；这与 ch03 的"1 步 4 阶段"本质不同。
+- 5 个 step 通过 config 的 **`references.from_exercise`** 级联（schema 明确为"解决 ch4 五步级联"设计）：
+  - step-2 注入 step-1 的 `top_values`；
+  - step-3 注入 step-2 的 `groups`；
+  - step-4 注入 step-2 的 `groups` + step-3 的 `conversions`；
+  - step-5 注入 step-4 的 `ranked`。
+- 每步是独立 step 容器、独立提交态、独立锁定；runtime 从同章已 submitted 的 `step_runs` 取前序字段注入（受 ≤3k assembler 护栏约束，仅按需注入、不全量）。
+- 测试强约束（`test_context_integrity.py`）：上述 `references` 级联顺序已断言，config 改动**不得破坏** step-2..5 的 `references` 结构。
+
+## 3. 步骤流程图
+```mermaid
+flowchart TD
+    S1[step-1 回答5问] --> S2[step-2 思维导图分组]
+    S2 --> S3[step-3 可控性转化]
+    S3 --> S4[step-4 金字塔排序]
+    S4 --> S5[step-5 确定工作目的]
+    S5 --> Done[本章完成]
+    M[导师对话 刘老师 贯穿全程] -.引用 ch3 importance.-> S1
+    S5 -.work_purpose.-> C7[ch7 组合过滤器]
+    S5 -.ranked / values.-> C8[ch8 成功宣言]
+```
+
+## 4. 逐阶段明细
+> 每个 step 的「谁 / 输入 / 输出 / 记录 / 约束 / LLM 角色 / 依赖」如下。
+
+### step-1 回答 5 个问题，找出价值观关键词
+- 谁：用户 + LLM（psychologist，辅助模式 assist）。
+- 输入：用户在 5 个长文本框逐题作答（书中精选 5 问：尊敬的人 / 童年经历 / 社会不足 / 他人眼中的你 / 想传授的建议）。5 问为固定书本题（配置即生效，见 config `input_schema`），用户只填答案。
+- **30 问发现辅助（方案A 收口，2026-08-13）**：step-1 `input_schema` 新增可选字段 `value_questions`（`list_of_items`，item=`{question_id:number(q_order 1–30), question?:text, answer:text}`）。用户若 5 问素材不足，可从「重要的事 30 问」题库追加回答；答案由 questions 服务接入、`book_notes` 持久化，运行前前端按 `q_order` 取回填入本字段。**`value_questions` 是发现素材、非必需产出，不进入 `top_values`、不流 step-2 / ch07，与 ch06 §9#10 口径一致。**
+- 输出：`commentary`（整体映照点评，markdown，readonly）+ `top_values`（5–10 个初步价值观关键词，editable_list，lockable）。每个关键词同时保存 `evidence.summary`：本轮分析提炼的一句个人依据（最多 60 字），供后续步骤理解词义；**后续不再重传五问或 30 问原文**。
+- 记录：答案存 `user_answers`；LLM 输出存 `parsed_output`。
+- 约束：LLM **不替用户定性**，只映照反复出现的价值观线索；`top_values` 用户可编辑/锁定。
+- 依赖：**无上游**。mentor 引用 ch3 `importance` 仅作开场回响，非练习输入。
+- 想不出时：引导「书写冥想（3 分钟不停笔）」或「提问对话」，并渲染 config 的 `guiding_questions` 与 100 例清单（见 §7）。
+
+### step-2 形成价值观思维导图
+- 谁：LLM（psychologist，assist）+ 用户审阅。
+- 输入：注入 step-1 的 `top_values` 及各词的 `evidence.summary`（它是已分析过的压缩个人依据，不是原始问答）。
+- 输出：
+  - `groups`：`[{umbrella, keywords[], locked}]`（每组 **4~6 个**近义词 → 概括一个核心价值观 umbrella；原书 4~6 为建议值，例子浮动 3~7，详见下方 UX 行为 2）。editable_list，lockable。
+  - `ungrouped`：`[text]`（**只读 list**——从某组删除的关键词自动归入此处，用户不能直接编辑）。type=`list`，`readonly=true`。
+- 记录：`parsed_output`。
+- **UX 行为（2026-08-29 产品负责人拍板）**：
+  1. **LLM 角色**：生成**初步分组草稿**（不替用户定分组，提交前皆为草稿），用户审阅编辑后才生效。
+  2. **每组 4~6 个 vs 实际浮动 3~7**：原书第 279 行「每组 4～6 个」是指导值；图 4-8 八木仁平真实示例为审美意识 7、热爱 5、成果 4、好奇心 7、简单 3（浮动 3~7）。前端可按 4~6 显示"建议满"提示，但允许 3~7 提交。
+  3. **从组内删除某关键词** → 该关键词**自动归入「未分组」区**（始终在画面顶部或侧栏可见）。
+  4. **向某组添加关键词** → 只能从「未分组」区选择（不允许直接把未出现的词加进组，避免漏归类/重复）。
+  5. **提交校验**：`ungrouped` 为空 = 全部归组完成 → 才可提交；否则禁用提交按钮并提示「还有 N 个关键词未归组」。
+  6. **删除整个分组** → 该组内的关键词同样全部回到「未分组」区，不丢弃。
+  7. **新补充的关键词**（自由输入，或来自「100 例价值观清单」）一律**先落「未分组」区，不自动进组**：用户可手动归入某组，或点「重新生成分组」让 LLM 把未分组池连已分组的关键词一起重排。
+  8. **每组 4~6 个是软提示，不是门禁**：UI 在每组下方提示「N 个 · 建议 4~6 个，还差 X 个」/「在建议区间（4~6）内」/「超出建议区间（4~6）」，但 3~7 都允许提交，不拦截。
+  9. **原型已实现（2026-08-29）**：`platform/prototype/ch04_exercise_mockup.html` step-2 视图已按上述 1~8 落地，开发侧可直接对照。原型在「让咨询师分组」之前另有一个**补充关键词暂存区**（用户此时挑的词先暂存，点分组时一并进入「未分组」区），这是为了避免分组前挑的词落进无人消费的临时区。
+- 约束：汇总≥15 个关键词（不足则提示回 step-1 补答 / 查 100 例）；LLM 不替用户定分组；重生成时锁定项保留（preserve_output）；新 `ungrouped` 字段是只读 list，用户不直接编辑。
+- 依赖：references step-1 `top_values`。
+
+### step-3 以他人为中心 → 以自我为中心
+- 谁：LLM（psychologist，assist）+ 用户审阅。
+- 输入：step-2 的 `groups` 被展平为**逐个关键词**（`group` 仅展示上下文），同时带入 step-1 已提炼的 `evidence.summary`；不注入五问或 30 问原文。
+- 输出：两阶段 `conversions`：`[{group, value, type:self|other|uncertain, assessment:keep|explore|convert_candidate, evidence_summary, question, converted_to, why_chain[], decision:pending|keep|convert}]`。第一阶段 `screening` 覆盖全部关键词；第二阶段 `proposal` **只返回用户实际回答过的待澄清项**，后端将其合并回首轮筛查，避免模型重复输出整份清单而耗尽输出长度。
+- 记录：`parsed_output`。
+- 约束：逐个关键词检查能否由自己主动实践。`self/keep` 保留原词；`uncertain/explore` 或含外部结果的 `other/convert_candidate` 先只问一个具体问题；用户补充后，LLM 才用「为什么 / 达成后想做什么 / 不出现 X 也能做到吗」提出一个候选改写与最多三层 why 链。外部取向不是坏价值；原词、分组和映射始终保留，**用户**选择「采用改写」或「保留原词」，LLM 不替用户定性。
+- 依赖：references step-1 `top_values` + step-2 `groups`。
+
+### step-4 价值观排序（金字塔）
+- 谁：LLM（career_counselor，assist）+ 用户拖拽/锁定。
+- 输入：注入 step-2 `groups` + step-3 `conversions`；仅将用户确认 `decision=convert` 的项替换为 `converted_to`，`self`/`keep` 保留原词，未确认项不进入排序。
+- 输出：`ranked`：`[{value, locked}]`（从底=基础 → 顶=最终目的）。editable_list，lockable。
+- 记录：`parsed_output`。
+- 约束：底层=优先满足的基础价值观，顶层=人生最终目的；用户拖拽排序、锁定/删除；重生成时锁定项保留。
+- 依赖：references step-2 `groups` + step-3 `conversions`。
+
+### step-5 确定工作目的
+- 谁：LLM（career_counselor，assist）+ 用户列出经历。
+- 输入：用户列出 10 个向他人提供价值的经历（每条一行）；注入 step-4 `ranked`。
+- 输出：`work_purpose`（一句话工作目的，text，lockable）+ `reasoning`（推理，markdown，readonly）+ `experience_map`（经历→价值观映射，table，readonly）。
+- 记录：`parsed_output`；`work_purpose`/`ranked`/`values` 沉淀到 `learner_profile`。
+- 约束：统计 10 经历中出现最多的价值观定为工作目的；排除「想让别人开心/幸福」等过泛表述；用户可手动覆盖 `work_purpose`。
+- 依赖：references step-4 `ranked`。向后：→ ch7（work_purpose）、ch8（ranked/values）。
+
+### 贯穿：导师对话（刘老师）
+- 谁：用户 + 刘老师（mentor）。
+- 输入：用户自由提问；刘老师上下文 = 本章各步答案/输出 + **ch3 的 `importance`**（mentor_hooks.references）。
+- 输出：苏格拉底式追问，把「我应该做」拆回「我想做」、识别虚假价值观、陪做可控性 5Why、帮定工作目的。
+- 约束：引用前章锚点建立连续性；不替用户定性。LLM 角色：导师（刘老师），贯穿，不限步骤。
+
+## 5. 依赖总览
+- step-1：无上游依赖。
+- step-2 → 注入 step-1 `top_values` + 压缩个人依据；step-3 → 注入 step-1 的压缩个人依据 + step-2 `groups`（逐词处理）；step-4 → 注入 step-2 `groups` + step-3 已确认 `conversions`；step-5 → 注入 step-4 `ranked`（均为同章前序 step 输出，runtime 取已 submitted 的 step_runs）。
+- 贯穿导师对话：依赖 **ch3 `importance`**（跨章锚点，非练习输入）。
+- step-5 产出：`work_purpose` → 供 **ch7** 引用（必需，过滤器）；`ranked` / `values` → 供 **ch8** 引用（可选增强）。
+
+## 6. 各产出字段的锁定类型（lockable / readonly 契约）
+本节说明 ch04 **每个产出字段在"提交前"是否用户可锁定 / 只读**，是给开发侧的字段级声明。⚠️ "锁定"只管本章内，管不了提交后其他章节的改写——后者见本节点末尾表格。
+
+- **top_values**（step-1）：`editable_list, lockable=true` —— 用户可锁初版关键词，锁后 LLM 不再改。
+- **groups**（step-2）：`editable_list, lockable=true` —— 用户可锁分组，重生成保留。
+- **conversions**（step-3）：`editable_list` —— 每个关键词都有筛查记录；用户回答澄清问题后，选择保留原词或采用/编辑候选改写（未设 lockable，因它是可追溯的确认记录）。
+- **ranked**（step-4）：`editable_list, lockable=true` —— 用户可锁排序，重生成保留。
+- **work_purpose**（step-5）：`text, lockable=true` —— 用户可锁工作目的。
+- **commentary / reasoning / experience_map**：`readonly`（LLM 产出，用户不可改）。
+
+### 跨章改写硬约束（必须和上表分开理解）
+ch04 的持久产出（`values`=`top_values` 别名 / `ranked` / `work_purpose`）写入 `learner_profiles.profile_json` 后，**均不被后续任何章节覆盖**：
+
+| 字段 | ch04 内可锁定？ | 后续是否被改写 | 改写方 | 能否保值到 ch07/ch08 |
+|---|---|---|---|---|
+| values（=top_values） | 可（step-1） | **不会被改写** | 无后续章写 `values` | **是** |
+| ranked | 可（step-4） | **不会被改写** | 无后续章写 `ranked` | **是（ch08 引用）** |
+| work_purpose | 可（step-5） | **不会被改写** | 无后续章写 `work_purpose` | **是（ch07 过滤器）** |
+
+> ch5（擅长）、ch6（喜欢）只写各自的深化键（talents/likes 等），不碰 values/ranked/work_purpose；ch7 读 work_purpose、ch8 读 ranked/values，均为"读取引用"而非"覆盖写入"。故 ch04 三键是稳定的跨章种子。
+
+## 7. 用户可见文案与前端提示
+> 以下文案为设计侧提供的 UI 建议，开发侧渲染即可，不在前端写死业务逻辑；标签/引导属前端展示层。
+
+- **5 步导航**：左栏 step-nav 显示 step-1～step-5，标注每步标题与提交状态（未开始/草稿/已提交）；点击切换中心内容区。
+- **三栏顺序引导（承接 ch03）**：阶段提示「建议先想清楚什么对你真正重要（价值观）——这正是第四章要做的」。
+- **step-1 引导小字**：「这 5 个问题没有标准答案。答不上来时，试试『书写冥想』：定时器 3 分钟，不停笔写『对我重要的事』；或找朋友做『提问对话』。」
+- **step-1 想不出？面板**：前端从 config 的 `guiding_questions`（3 条）渲染「想不出？参考这 3 个引导问题」可折叠面板；另提供「100 例清单」抽屉（**数据源 = config `ui_context.values_examples`，100 项价值观名+描述，随 active config 发布，前端直接读取已加载章节 config 即可、不另接接口**，方案A 已固化），用户可引用关键词到 step-2 `supplemental_keywords`。
+- **step-2 计数刷新**：顶部显示「已收集 N / 15 个关键词」，低于 15 高亮「去回答 30 问 / 查 100 例」；关键词增删时**实时刷新计数**（吸取 ch03 mockup「计数不刷新」教训）。
+- **step-3 可控性检验卡**：逐词显示分组、压缩个人依据与状态徽章：`self`=「可自主实践」、`other`=「含外部条件」、`uncertain`=「需要你的说明」。后两者先显示一个短追问；收到回答后的候选改写显示最多三层 why 链及「采用改写 / 保留原词」两个确认按钮。不得编辑或删除原词记录。
+- **step-4 金字塔**：纵向分层列表，底层标注「基础」、顶层标注「最终目的」；可拖拽（或上/下按钮）排序、🔒 锁定；锁定项显示图标。
+- **step-5 工作目的卡**：顶部固定显示最终「工作目的」，纸张卷轴样式，可导出；下方 `experience_map` 以「经历 → 价值观标签」成对展示。
+- **空态/兜底**：各步必要输入缺失时拦截并提示；LLM 明显偏差时提供「换一种说法 / 重新生成」按钮（新建草稿 run，不影响已提交记录）。
+- **维恩/配色口径**：ch04 不复用 ch03 三圆；其专属视觉（书卷气体系：赭石 accent、纸纹、衬线字体）见 PRD §6，mockup 已按此渲染。
+
+## 8. 数据表与字段设计
+> 已对照实 backend 代码核对（compaction.py / db.py / steps.py / schema）。**ch4 不新建表、不新增列，全部复用现有结构**（含 `step_runs.stale` 列——该列随 ch06 实施统一加入，ch04 复用，详见 §8.6；ch04 仅新增级联 stale 传播 + profile 失效逻辑，非表结构变更）。
+
+### 8.1 复用的两张现有表
+- **`learner_profiles`**（`user_id` PK, `profile_json` TEXT）：跨章档案。ch4 三个持久产出作为新键落进 `profile_json`。
+- **`step_runs`**（`id` PK, `user_answers`, `parsed_output`, `status` …）：各 step 原始输入存 `user_answers`；LLM 输出存 `parsed_output`。现有列已够。
+
+### 8.2 profile_json 里新增的键（白名单已含，零改动）
+`compaction.py` 的 `PROFILE_FIELDS` **已包含 `values` / `work_purpose` / `ranked`**（且 `PROFILE_FIELD_ALIASES = {"top_values": "values"}`，即 step-1 的 `top_values` 落库时自动归并为 `values`）。ch4 提交后 `compact_profile` 自动并入，**无需改白名单、无需改 compaction 逻辑**。
+- `top_values` → 别名 `values`：`editable_list`，`lockable=true`。
+- `ranked`：`editable_list`，`lockable=true`。
+- `work_purpose`：`text`，`lockable=true`。
+- `groups` / `conversions` / `commentary` / `reasoning` / `experience_map`：**不进 profile_json**（不在白名单），仅留在各 step 的 `step_runs.parsed_output`，属章内中间产物，不跨章传播。
+
+### 8.3 ch4 练习配置（现状，已对齐 new-schema）
+`chapter_config_ch04.json` 当前状态（**开发侧无需改，仅渲染**）：
+- 5 个 exercises（step-1..step-5），各自 `step_role_id`（psychologist / career_counselor）、`output_fields` 类型与 `lockable`/`readonly` 如上 §6；
+- step-1 `input_schema` = 5×`text`（书中 5 问，配置即生效）；
+- step-2..5 `references.from_exercise` 级联（见 §2 / §5）；
+- `mentor_hooks.references: ["importance"]`（引用 ch3 锚点）。
+
+### 8.4 锁定机制（复用整步提交态）
+**真实的「锁定」= 整步提交态**（已核实 `routers/steps.py`，与 ch02/03 同构）：
+- 用户编辑草稿：`edit_output` 在 `status=="submitted"` 时返回 409；只有 `saved` 态可改。
+- 用户「锁定」：`submit_step` 把 `status` 置为 `submitted`，并触发 compaction 归档。
+- 重跑保护：`_get_or_create_run_id` 在 latest=submitted 时新建 run id（不覆盖已提交记录）。
+**结论**：各字段「锁定」= 用户编辑草稿后点「提交/确认并保存」，整步进入 submitted 即锁。`lockable`/`readonly` 仅作 schema 意图声明（前端据此渲染「可锁/只读」UI），运行时强制靠提交态。
+
+### 8.5 数据落地结论
+- 不新建数据库表/列、无表结构迁移（`step_runs.stale` 列已随 ch06 实施存在，ch04 复用）；但需完成：配置发布（reseed active config）、运行时上下文（`step_context` 声明 / `preserve_output` 透传给 steps/agent/assembler）、前端 renderer（可编辑 `groups`/`conversions`、锁定、重生成）、**级联 stale 隔离逻辑（见 §8.6）**与契约测试。属「无 schema 迁移，但有代码/前端/配置改动」（纠正旧稿『零代码改动』表述）。
+- 三键（`values`/`ranked`/`work_purpose`）借 `learner_profiles.profile_json` 落库，提交即自动归档；中间产物 `groups`/`conversions` 仅留 `step_runs`；
+- 唯一变动是常规分章配置 `chapter_config_ch04.json`（已就绪）；
+- 锁定靠整步提交态；与 ch02/03 同构：5 个 exercise 级联。
+
+### 8.6 上游重提交：级联 stale 隔离与 profile 失效（权威口径）
+> 对应 ch06 stale 机制在「5 步强级联」场景的延伸。后端 `step_runs.stale INTEGER NOT NULL DEFAULT 0` 列**已随 ch06 实施统一加入**（`app/db.py init_db()` 幂等迁移，旧库升级默认补 0），ch04 **复用该列，不再新增 schema 迁移**；但 ch04 须实现「级联 stale 传播 + profile 失效」逻辑（新增，属代码/契约改动，非表结构变更）。
+
+**级联依赖闭包（来自 config `references.from_exercise`，线性链）**：
+- step-1 → step-2 → step-3 → step-4 → step-5（step-4 同时依赖 step-2+step-3，但均间接源自 step-1，整体为线性链）。
+- 重提交 step-k 时，其**传递下游** = 所有 step-j（j > k）均失效（任一步都依赖前序）。
+
+**触发条件**：当 ch04 任一**非末步** step-k（k ∈ {1,2,3,4}）成功 `/submit`（新 submitted run 写入）时触发；末步 step-5 重提交不触发级联（无下游，由 `_maybe_compact` 正常重写 profile，见末步安全路径）。
+
+**同一数据库事务内完成三动作**（任一失败整体回滚，杜绝「新步已提交 / 旧下游已 stale / profile 仍旧值」中间态）：
+1. 写入新的 step-k `submitted` run（stale=0）；
+2. 将既有 **step-(k+1)…step-5 中 `status IN ('saved','submitted')` 的 runs** 置 `stale=1`（与 ch06 现网行为对齐：草稿态 `saved` 一并标记，避免旧草稿被误提交成「已完成」；幂等：已 stale 的保持 stale）；
+3. 将 `learner_profile` 中 ch04 自有键 **`values` / `ranked` / `work_purpose` 置空/移除**（三键均为 ch04 独占写入、无其他章节改写，见 §6 跨章改写硬约束表；清空不会误伤 `likes`/`talents`/`importance` 等）。
+
+**为何清空三键（一致性优先）**：ch07 同时消费 `work_purpose`（过滤器）+ `values`（核心价值观）、ch8 消费 `ranked`/`values`，三者须作为**同一组**一致。即便某次重提交仅影响部分键（如 step-2 重提交时 `values` 仍源于未变的 step-1），若只清 `work_purpose`/`ranked` 而留旧 `values`，会产出「旧价值观 + 空工作目的」错配；故统一清空三键，待用户重走全 5 步由 `_maybe_compact` 一次性重写（见下）。
+
+**末步 step-5 重提交（安全路径，无需显式清空）**：step-5 是末步，重提交时无下游需标 stale；此时前 4 步若均 `status='submitted' AND stale=0`，`_maybe_compact`（steps.py:541，已自带 `stale=0` 过滤）取全部 5 步最新非 stale 输出重写 profile，`values`/`ranked`/`work_purpose` 一并刷新为一致版本。
+
+**profile 写入时机（关键）**：`_maybe_compact` 仅在**全章 5 步全部 `submitted` 且 `stale=0`** 时触发（`if len(rows) < len(step_ids): return None`）；故非末步重提交使下游 stale 后，compaction 自动跳过、不重写 profile——这正是「旧 profile 残留」的根因，须由本节约三动作第 3 步显式清空兜底。
+
+**读取优先级（统一）**：`step_runs` 取 `status='submitted' AND stale=0` 的最新 run；`learner_profile` 只读当前 `values`/`ranked`/`work_purpose`（清空后视为缺失）；`stale=1` 历史 run 仅用于历史查看，不进导师 / summary / ch7 / ch8 / compaction。
+
+**与 ch06 的差异（避免开发侧过度设计）**：
+- ch04 各步产出字段名**互不重复**（`top_values`/`groups`/`conversions`/`ranked`/`work_purpose`），仅 `top_values` 经 `PROFILE_FIELD_ALIASES` 归并为 `values`；**不存在 ch06「step-1 与 step-2 同名 `likes`」的隐式合并污染**，故 ch04 **不需要 ch06 式 canonical 写入规则（方案 A）**，通用 `_flatten_outputs` 即可安全合并。
+- ch04 的 stale 难点在**级联传播（1 对多）**，ch06 是 2 步特例（1 对 1）；建议将 ch06 的 step-1→step-2 特例重构为**通用级联 helper** `mark_downstream_stale(chapter_id, re_submitted_step_id)`（按 config `references` 闭包计算下游）+ `clear_chapter_profile_keys(chapter_id, keys)`，ch04/ch06 共用。
+
+**完成判定门禁（统一规则）**：ch07 进入前校验 `work_purpose` 存在且非空（文本）；ch8 进入前校验 `ranked`/`values` 存在且为非空数组；清空后三者缺失 → 视为 ch04 未完成 → 下游章重新锁定（防御性，即便 profile 清空与 `stale=1` 因代码路径分歧短暂不一致，下游也不消费过期值）。
+
+**修改前提醒（防误改，通用前端模式）**：用户对已 `submitted` 的 step 点击「修改 / 重新编辑」时，先弹确认框：「你正在修改已完成的第 X 步。重新提交后，其后续步骤（第 X+1…5 步）的结果将全部失效、需重新运行；且已写入档案的核心价值观 / 排序 / 工作目的将被清空，直到你重走完整 5 步。」按钮「仍要修改 / 取消」。**仅当该 step 存在下游（j>k）时才需强提醒**；末步 step-5 重提交无下游，可省略或弱化为普通确认。此模式为前端通用能力，同样适用于 ch06 step-1、ch07 step-1 等有上游依赖的步（章节无关，前端统一实现，非 ch04 专属）。
+
+**重提交后过期提示**：step-k（k<5）重提交后，step-(k+1)…step-5 显示「该步结果已过期（上游已更新），请重新运行并提交」而非「已完成/已锁定」；用户重走全 5 步后提示消失。
+
+## 9. 设计判断（与旧 PRD / seed_ch4.py 的差异处理）
+本轮按 ch02/ch03 新范式重做 ch04，对旧稿做了以下关键纠偏，特此说明，避免开发侧混淆：
+1. **权威源更正**：旧 `PRD-ch4.md` §0/§4/§10 曾把 `seed_ch4.py`（jinja2 `prompt_template` / `llm_op.output_schema` 旧格式）当权威配置源。已更正为 **`chapter_config_ch04.json`（new-schema）** 为唯一权威源；`seed_ch4.py` 标为遗留，仅旧前端 `index.html` 兼容参考。
+2. **5 步 = 5 个 exercise（非 1 步 5 问）**：与 schema `references.from_exercise` 级联设计一致，step-2..5 各自独立 step 容器；旧稿"Step 1 是否拆成 5 步"的开放问题已据此拍板为"5 步即 5 exercise"。
+3. **step-1 输入配置即生效**：5 问建模为 `input_schema` 的 5×`text`（label=题面），不再依赖前端硬编码问句。
+4. **`conversions` 改 `editable_list`**（原为 `list`）：与 §4 user_action"用户可手动改 converted_to / 标 self"一致，允许前端可编辑。
+5. **`mentor_hooks.references` 由 `["formula"]` 改为 `["importance"]`**：`formula` 非真实跨章锚点（且与 ch04 语义无关）；`importance` 来自 ch3，正好支撑 ch04 刘老师"第三章的重要的事还最在乎吗"开场回响。
+
+## 10. 开放点与专家评审
+
+> **实施状态（2026-08-14 修正）**：ch04 主体（5 步级联练习、LLM 角色、30问/100例 固化 config 即生效、题库走 questions 服务、reseed 消除 DRIFT）开发侧已实施；**但 §8.6 级联 stale 隔离（A 级联事务 / B 两 helper / J 前端提醒）经 2026-08-14 开发侧实测尚未实现**（后端无 `mark_downstream_stale`/`clear_chapter_profile_keys`、ch04 `submit` 仍为通用路径、前端已提交步骤仅有「对话」按钮无修改入口/提醒），**待开发侧补**。下列原开放点与「开发侧待办」均已落地，保留以作追溯；契约权威源仍为 `config/chapters/chapter_config_ch04.json` 与本文件。
+
+> 以下为设计侧已识别、待评审/开发侧确认的点；专家评审结论将于评审后回填本节点。
+
+- **题库注入方式（方案A 已收口，2026-08-13）**：① **100 例清单**已固化进 config `ui_context.values_examples`（100 项，价值观名+描述），随 active config 发布，前端读 config 即生效，**不再依赖 `chapter_md/问题清单.md`，无需后端/题库配合**；② **30 问**通过 step-1 `input_schema.value_questions`（可选 `list_of_items`）接入，答案走 questions 服务 + `book_notes`，前端按 `q_order` 取回填入，作为发现素材（非产出物、不流下游）。两者均为纯增量。**「100 例」抽屉的具体呈现为前端细节，由开发侧实现；引用项写入 step-2 `supplemental_keywords`（见 §11 Q3）。**
+- **`work_purpose` 用户覆盖**：允许用户在 step-5 手动覆盖 LLM 建议（LLM 仅给建议），与 ch03 同策略。
+- **金字塔交互**：拖拽排序 vs 上/下按钮——原型用按钮降级实现，正式前端建议拖拽；均需保证锁定项不被重排覆盖。
+- **`top_values`→`values` 别名**：落库后键名变为 `values`（别名映射），下游章（ch8）引用时须用 `values` 而非 `top_values`；prompt 注入时注意键名。
+- **prerequisite gating**：ch7/ch8 进入时读取 ch4 的 `status` 与 `work_purpose`/`ranked`，缺失则按 PRD-ch4 §1.6 锁定——属下游章职责，本文仅声明产出，不实现 gating。
+
+### 专家评审结论（回填区）
+- 双专家评审（架构 + 产品/UX）已于 2026-08-09 重跑，完整 P0/P1/P2 与整改归属见 `docs/ch04_专家评审记录.md`。结论速览：
+  - **设计侧已修（本轮）**：P0-1 config 补 `instruction`（5/5 step，满足 schema 必需字段）；P0-3 书名修正；P0-1 UX 金字塔方向（顶=最终目的）；P0-2 UX step-2 的 N/15 计数 + 查 100 例入口；P0-3 UX 三处"重新生成"真实重排；P1-5 引导问题对齐 config；P1-7 演示数据级联可追溯 + 工作目的卡合并；P1-8 文案黑话。
+  - **开发侧待办（请开发处理，设计侧不动代码）**：P0-2 `preserve_output` 透传（steps/agent/assembler）；P1-6 `values`/`ranked` 加入 `MANDATORY_DOWNSTREAM_FIELDS`（compaction）；ch04 config 改后 reseed 数据库（消除 DRIFT）；P1-4 step-5 输入类型（list_of_items）与 PRD/落地措辞对齐。
+  - 测试：`test_context_integrity`+`test_config_consistency`+`test_m4_ch04_cascade` = 26 passed（现有测试不覆盖 P0-1 instruction / P0-2 preserve）。
+
+## 11. 开发侧 review 确认答复（2026-08-10）
+
+> 对应 `docs/ch04_落地级步骤设计_待设计确认.md`。以下为设计侧对 Q1–Q8 的确认结论；凡标注「开发侧待办」者由开发实现，设计侧不动代码。
+
+### Q1. 导师 `mentor_hooks.references` 最终字段 → 确认 `[importance]`
+- ch03 真实结构化产出字段为 `importance`（另有 `talents`/`likes`/`intersection`），**无 `formula`**；`formula` 仅为概念公式（喜欢×擅长×重要），非落库键。
+- 故 ch04 导师引用 ch3 的 `importance` 正确。config 已为 `["importance"]`；需同步：`mentor_design_spec.md` 八章钩子表 `[formula]`→`[importance]`（已改）、active DB reseed、以及 `test_context_integrity.py` 期望值（若其硬编码 `formula`）。
+- `formula` 不再作为任何章节的 profile 键；`mentor_design_spec.md` 第 86 行示例 profile 与第 221 行 ADR 提取清单中的 `formula` 属陈旧残留，建议开发侧在统一重构时一并清理（非 ch04 阻塞项）。
+
+### Q2. 导师对话加载哪些 ch04 上下文 → 确认「分层上下文」
+- 采用开发侧建议的分层：① 压缩 profile（`importance`/`values`/`ranked`/`work_purpose` 等跨章字段）；② 本章所有**已提交** step 的筛选后摘要（step-1 五问+`top_values`、step-2 `groups`、step-3 `conversions`、step-4 `ranked`、step-5 经历+`work_purpose`+`experience_map`）；③ 最近 8–12 轮对话；④ 统一 token 上限，优先截断历史再缩减 step 上下文。
+- **未提交 step 不进入导师上下文**（与「提交即锁定」原则一致）。
+- 注意：导师读取的是「筛选后摘要」，不是八章原始 JSON 全量注入。
+
+### Q3. step-2「≥15 关键词」如何进入 LLM → 确认「补充关键词走 `supplemental_keywords`」
+- 设计确认采用开发侧建议的新字段：step-2 新增 `input_schema.supplemental_keywords`（`list_of_items`，非必填；**已写入 config**）。
+- 计数规则：`N/15` = `step-1.top_values` ∪ `supplemental_keywords` 去重后的数量。
+- 「100 例清单」引用、自由输入均只写入 `supplemental_keywords`；重新生成时 LLM 同时读取注入的 `top_values` 与 `supplemental_keywords`。
+- 用户在 UI 上对关键词池的增删（含删除某个注入词）以「屏幕上可编辑 chip 列表 = 最终提交池」为准；锁定项经 `preserve_output.groups` 传入（见 Q4）。
+- 「100 例清单」抽屉数据源 = config `ui_context.values_examples`（方案A 已固化，前端读 config 即生效，非 `chapter_md/问题清单.md`）；具体抽屉呈现为前端细节，由开发侧实现。
+
+### Q4. `preserve_output` 锁定项保留规则 → 确认开发侧建议语义
+- 采用：提交/重生成时 `preserve_output` 透传**当前完整编辑结果**；后端/assembler 提取 `locked=true` 项；**LLM 只返回未锁定项**；后端按原位置合并锁定项与新生成项；**LLM 不得修改锁定项的内容与位置**。
+- 锁定项**保留原位置**（值+位置均锁定）。
+- 用户**删除已锁定项前必须先解锁**；解锁后才允许删除，删除后该位置重生成可填充。
+- 要求：落地文档与 mockup 均须体现「锁定项位置不变」；本设计选「位置+值均锁定」。
+
+### Q5. step-3 `why_chain` 是否严格 5 节点 → 确认「1–5 弹性」
+- 设计确认开发侧建议：`type=other` 允许 **1–5** 个节点，由 LLM 判断何时收敛，**不凑 5**；`type=self` 的 `why_chain` 可为空。
+- 用户可编辑/删除/补充 `why_chain` 节点；`converted_to` 对 `type=other` 应非空，若确实无法转化允许 `converted_to:""` 并提示用户继续对话追问。
+- 「5Why」为方法论名称（最多追溯 5 层），非硬性计数约束。
+
+### Q6. step-5 textarea 与 API 格式 → 确认「textarea + 按行拆分」
+- 设计确认：UI 用**一个多行 textarea**，用户每段一行；前端按行拆分，每行→1 条 `experience` 记录，提交为 `list_of_items`（min_items=10），与 config `input_schema` 正式对齐（**PRD-ch4 §1.7 已补显式转换契约**）。
+- 不采用 10 个独立输入框；不做 textarea/输入框切换。
+
+### Q7. `mentor_hooks.references` 作用域 → 确认「仅导师」，并新增 `step_context`
+- 设计确认采用开发侧第三种方案：`mentor_hooks.references` **只用于导师**，绝不进入普通 step 的 LLM prompt。
+- ch04 config 已新增顶层 `step_context: {references: []}`（与 ch03 同构），**显式声明本章 step 无跨章 profile 注入**，阻断 `assembler.py` 在无 `step_context` 时回退 `mentor_hooks.references` 的泄漏 bug（同 ch03 已修路径）。
+- 开发侧须确保 `build_step_prompt` 严格只从 `step_context.references` 取 step 级 profile 注入；`mentor_hooks.references` 仅供 `chat.py` 装配导师上下文。
+
+### Q8. 「不替用户定性」与 LLM 自动归纳的边界 → 确认「草稿→提交才生效」
+- 设计确认开发侧建议：所有 LLM 生成的结构化字段（`top_values`/`groups`/`conversions`/`ranked`/`work_purpose` 等）**先作为「AI 建议 / 草稿」**，用户提交 step 后才成为正式结果进入 profile。
+- UI 统一对这些生成内容标注「AI 建议」，不冒充「你的价值观 / 你的最终目的」；用户可编辑、锁定、覆盖（如 step-5 `work_purpose` 手动覆盖）。
+- 导师（刘老师）**不做最终价值判断**，只映照、追问、帮用户自己得出；ch04 各 step 的 `user_action` 已写明「LLM 不判对错 / 不替用户定分组 / 不替用户定性」，与此一致。
+- **（2026-08-10 产品负责人已确认此 UX 口径。）**
+
+### 文档修改项（设计侧已落地）
+- `mentor_design_spec.md` 八章钩子表 ch04 `[formula]`→`[importance]`（✅ 已改）。
+- `PRD-ch4.md` §1.7 Step 5 显式「textarea 按行拆分→list_of_items」转换契约（✅ 已改）。
+- 落地文档 §8.5「零代码改动」→「无 schema 迁移，但有代码/前端/配置改动」（✅ 已改）。
+- `chapter_config_ch04.json` 新增 `step_context{references:[]}` 与 step-2 `input_schema.supplemental_keywords`（✅ 已改，待 reseed）。
+- 开放点 #1（题库注入方式）由 Q3 结论闭合（见上）。
+
+### 开发侧待办（非设计侧）
+- `preserve_output` 透传：`steps.py`/`agent.py`/`assembler.py`（Q4）。
+- `compaction.py` 将 `values`/`ranked` 加入 `MANDATORY_DOWNSTREAM_FIELDS`（专家评审 P1-6，§3.1）。
+- ch04 active config reseed（消除 DRIFT；当前 DB v4 仍 `[formula]`、缺 `step_context`）。
+- 前端 renderer 支持可编辑 `groups`/`conversions`、锁定、重生成（§3.3）。
+- `check_config_consistency.py` 扩展覆盖 `step_context`/`ui_context` 漂移（ch03 同问题）。
+- `test_context_integrity.py` 期望值若硬编码 `formula` 须随 Q1 同步。
+- **级联 stale 隔离（2026-08-14 新增，见 §8.6）**：① 通用 helper `mark_downstream_stale(chapter_id, re_submitted_step_id)`（按 config `references.from_exercise` 闭包计算下游，将 `status='submitted'` 的下游 run 置 `stale=1`，同事务）；② `clear_chapter_profile_keys(chapter_id, keys=["values","ranked","work_purpose"])`（同事务置空/移除）；③ 在 `submit_step` 中、非末步重提交分支接入上述两动作（与写新 run、`_maybe_compact` 同事务）；④ 建议将 ch06 的 step-1→step-2 特例重构为同一通用 helper 共用；⑤ 复用 ch06 第六轮回复 §4 的 12 个 stale 过滤入口（章节无关）；⑥ 回归：step-1 重提交 → step-2~5 显示过期且 profile 三键清空、ch7 门禁回退锁定；step-2 重提交 → step-3~5 过期；末步 step-5 重提交 → 全 5 步非 stale 时 `_maybe_compact` 正常重写三键（无清空）。

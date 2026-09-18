@@ -1,0 +1,45 @@
+platform/backend/__pycache__/
+platform/backend/data/*.db
+platform/backend/data/secret.key
+*.pyc
+.playwright-mcp/
+*.pdf
+*.png
+!platform/prototype/mockup-v4.html
+
+# ---- 书籍原文与提取产物（版权内容，本地保留但不入库）----
+*.epub
+chapter_md/
+chapter_md.bak_*/
+chapters/
+chapters_xhtml/
+epub_extracted/
+chapter_html/
+platform/backend/book/
+
+# ---- OCR / 清理中间产物 ----
+platform/.claude/skills/mineru-cleanup/output/
+
+# ---- 过程与临时产物（本地保留，不入库）----
+.pytest*/
+_pytest*/
+.pytest_cache/
+.tmp_*
+_tmp_*
+.backups_*/
+_artifacts_ch03/
+archive/
+Web_verify_*.png
+_web_verify_*.png
+.playwright-cli/
+platform/backend/data/backups/
+platform/backend/data/*.db*
+platform/backend/data/secret.key
+platform/backend/logs/
+__pycache__/
+data/*.db
+
+# ---- 练习数据与调试日志（含个人答案，不入库）----
+*.log
+platform/backend/test_*.json
+platform/backend/.pytest*/

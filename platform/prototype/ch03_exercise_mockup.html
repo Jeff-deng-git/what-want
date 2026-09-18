@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What_Want · 第三章练习 — 三圆交集练习</title>
+<style>
+  :root{
+    --paper:#f6efde;
+    --paper-light:#faf4e3;
+    --paper-edge:#ebe1c8;
+    --ink:#2a2620;
+    --ink-soft:#6b6354;
+    --ink-faint:#9c937f;
+    --accent:#7a4d2b;
+    --accent-soft:#d8c4a3;
+    --accent-bg:#f1e8d2;
+    --green:#4d6b3f;
+    --teal:#3f6b6b;
+    --rule:#d9cfb6;
+    --c-important:#b07a3f; /* 赭石：重要 */
+    --c-talent:#3f6f9f;    /* 冷色：擅长 */
+    --c-like:#c56a47;      /* 暖色：喜欢 */
+    --shadow-sm:0 1px 3px rgba(42,38,32,.10);
+    --shadow-md:0 4px 14px rgba(42,38,32,.14);
+
+    --serif:"Source Han Serif SC","Noto Serif SC","Songti SC","SimSun",serif;
+    --sans:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--serif);
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:radial-gradient(circle at 18% 12%, rgba(255,255,255,.55), transparent 42%),
+                     radial-gradient(circle at 82% 78%, rgba(216,196,163,.28), transparent 46%);
+    background-attachment:fixed;
+    min-height:100vh;
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Top bar ---------- */
+  .top-bar{
+    position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:18px;
+    padding:12px 24px;background:var(--paper-light);border-bottom:1px solid var(--paper-edge);
+    box-shadow:var(--shadow-sm);font-family:var(--sans);
+  }
+  .top-bar .chap-info{display:flex;flex-direction:column;line-height:1.3;min-width:170px;}
+  .top-bar .chap-info .k{font-size:11px;color:var(--ink-faint);letter-spacing:.04em;}
+  .top-bar .chap-info .v{font-size:14px;color:var(--accent);font-weight:600;}
+  .progress-wrap{flex:1;display:flex;align-items:center;gap:10px;}
+  .progress-track{flex:1;height:6px;border-radius:99px;background:var(--paper-edge);overflow:hidden;}
+  .progress-fill{height:100%;width:25%;background:var(--accent);border-radius:99px;transition:width .35s ease;}
+  .progress-label{font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+  .nav-btns{display:flex;gap:8px;}
+  .nav-btn{
+    font-family:var(--sans);font-size:13px;color:var(--ink-soft);background:var(--paper);
+    border:1px solid var(--paper-edge);border-radius:3px;padding:6px 12px;cursor:pointer;transition:.18s;
+  }
+  .nav-btn:hover{border-color:var(--accent-soft);color:var(--accent);}
+  .nav-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* ---------- Reader 3-col (与 ch02 完全一致) ---------- */
+  .reader.three-col{
+    display:grid;grid-template-columns:190px 1fr 340px;gap:20px;
+    max-width:1180px;margin:0 auto;padding:22px 24px 60px;
+  }
+
+  /* ---------- Left: step-nav ---------- */
+  .step-nav{font-family:var(--sans);}
+  .step-nav .nav-title{font-size:12px;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase;margin:0 0 12px 4px;}
+  .step-nav .item{
+    display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:4px;cursor:pointer;
+    margin-bottom:4px;transition:.18s;color:var(--ink-soft);
+  }
+  .step-nav .item:hover{background:var(--paper-light);}
+  .step-nav .item .dot{
+    flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--accent-soft);
+    color:var(--accent);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;
+    background:var(--paper-light);margin-top:1px;transition:.18s;
+  }
+  .step-nav .item .txt{display:flex;flex-direction:column;line-height:1.3;}
+  .step-nav .item .txt .t1{font-size:13px;color:var(--ink);font-weight:500;}
+  .step-nav .item .txt .t2{font-size:11px;color:var(--ink-faint);}
+  .step-nav .item.active{background:var(--accent-bg);}
+  .step-nav .item.active .dot{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .step-nav .item.submitted .dot{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent);}
+  .step-nav .item.submitted .dot::after{content:"✓";}
+  .step-nav .item.submitted .dot span{display:none;}
+
+  /* ---------- Center: chapter-content ---------- */
+  .chapter-content{font-family:var(--serif);}
+  .chapter-content .book-title{font-size:12px;color:var(--accent);letter-spacing:.05em;margin:0 0 3px;}
+  .chapter-content h1{font-size:20px;line-height:1.4;margin:0 0 5px;color:var(--ink);font-weight:600;}
+  .chapter-content .chap-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 18px;font-family:var(--sans);}
+  .chapter-content h2{font-size:16px;margin:22px 0 8px;color:var(--ink);}
+  .chapter-content p{margin:0 0 14px;color:var(--ink);}
+  .chapter-content .quote{
+    border-left:3px solid var(--accent-soft);background:var(--paper-light);padding:12px 16px;
+    margin:18px 0;border-radius:0 4px 4px 0;color:var(--ink-soft);font-size:15px;font-style:normal;
+  }
+  .chapter-content .quote b{color:var(--accent);}
+  .chapter-content .lead-chip{
+    display:inline-block;font-family:var(--sans);font-size:13px;background:var(--accent-bg);
+    color:var(--accent);border:1px solid var(--accent-soft);border-radius:99px;padding:5px 14px;margin:4px 0 18px;
+  }
+  .formula{font-family:var(--sans);background:var(--paper-light);border:1px solid var(--paper-edge);
+    border-radius:4px;padding:12px 14px;margin:14px 0;font-size:13.5px;line-height:1.9;color:var(--ink);}
+  .formula b{color:var(--accent);}
+  .def-list{font-family:var(--sans);font-size:13px;line-height:1.7;margin:10px 0 16px;padding-left:0;list-style:none;}
+  .def-list li{padding:6px 0;border-bottom:1px dotted var(--paper-edge);}
+  .def-list li b{color:var(--accent);}
+
+  /* ---------- Right: side-panel ---------- */
+  .side-panel{
+    background:var(--paper-light);border:1px solid var(--paper-edge);border-radius:4px;
+    box-shadow:var(--shadow-sm);overflow:hidden;align-self:start;position:sticky;top:78px;
+  }
+  .side-tabs{display:flex;border-bottom:1px solid var(--paper-edge);font-family:var(--sans);}
+  .side-tabs .st{
+    flex:1;text-align:center;font-size:13px;color:var(--ink-soft);padding:11px 0;
+    cursor:pointer;position:relative;transition:.18s;
+  }
+  .side-tabs .st:hover{color:var(--accent);}
+  .side-tabs .st.active{color:var(--accent);font-weight:600;}
+  .side-tabs .st.active::after{content:"";position:absolute;left:18%;right:18%;bottom:-1px;height:2px;background:var(--accent);}
+  .side-pane{display:none;padding:16px;max-height:74vh;overflow-y:auto;}
+  .side-pane.active{display:block;}
+
+  /* ---------- Stage cards / step card (沿用 ch02) ---------- */
+  .stage-card{border:1px solid var(--paper-edge);border-radius:4px;background:var(--paper);margin-bottom:12px;overflow:hidden;}
+  .stage-head{display:flex;align-items:center;gap:10px;cursor:pointer;padding:11px 13px;font-family:var(--sans);user-select:none;}
+  .stage-head .s-num{flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent-bg);
+    border:1px solid var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+  .stage-head .s-title{font-size:14px;font-weight:600;color:var(--ink);flex:1;}
+  .stage-head .s-sub{font-size:11px;color:var(--ink-faint);font-weight:400;}
+  .stage-head .chev{color:var(--ink-faint);font-size:12px;transition:transform .22s;flex:none;}
+  .stage-card.collapsed .chev{transform:rotate(-90deg);}
+  .stage-body{padding:4px 13px 14px;border-top:1px solid var(--paper-edge);}
+  .stage-card.collapsed .stage-body{display:none;}
+
+  .hint-card{font-family:var(--sans);font-size:12px;color:var(--ink-soft);background:var(--accent-bg);
+    border:1px dashed var(--accent-soft);border-radius:4px;padding:9px 11px;margin:12px 0;}
+  .hint-card .hc-lbl{display:block;font-family:var(--sans);font-size:10.5px;color:var(--accent);letter-spacing:.04em;margin-bottom:5px;}
+  .hint-card b{color:var(--accent);}
+
+  .btn{font-family:var(--sans);font-size:13px;border-radius:3px;cursor:pointer;padding:8px 14px;transition:.18s;
+    border:1px solid var(--accent);background:var(--accent);color:#fff;}
+  .btn:hover{filter:brightness(1.06);}
+  .btn.ghost{background:var(--paper-light);color:var(--accent);border:1px solid var(--accent-soft);}
+  .btn.ghost:hover{background:var(--accent-bg);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+
+  .toast{font-family:var(--sans);font-size:12.5px;color:#fff;background:var(--accent);border-radius:3px;
+    padding:8px 13px;margin-top:10px;display:none;box-shadow:var(--shadow-md);}
+  .toast.show{display:block;}
+
+  .pane-empty{font-family:var(--sans);font-size:13px;color:var(--ink-faint);text-align:center;padding:30px 10px;line-height:1.7;}
+  .chat-bubble{font-family:var(--sans);font-size:13px;margin-bottom:10px;}
+  .chat-bubble.mentor{background:var(--accent-bg);border:1px solid var(--accent-soft);border-radius:8px 8px 8px 2px;padding:9px 12px;color:var(--ink);}
+  .chat-bubble.me{background:var(--paper);border:1px solid var(--paper-edge);border-radius:8px 8px 2px 8px;padding:9px 12px;color:var(--ink-soft);text-align:right;}
+  .note-line{font-family:var(--sans);font-size:12.5px;color:var(--ink-soft);border-bottom:1px dotted var(--paper-edge);padding:8px 2px;}
+
+  /* ============================================================
+     STEP-CARD（与 ch02 真实前端 renderStepBody 同型）
+     ============================================================ */
+  .step-card{background:#fffdf7;border:1px solid var(--paper-edge);border-radius:4px;box-shadow:var(--shadow-sm);
+    margin:14px 12px 12px;overflow:hidden;font-family:var(--serif);}
+  .step-head{display:flex;flex-direction:column;gap:6px;padding:10px 13px 9px;border-bottom:1px solid var(--rule);background:var(--paper-light);}
+  .step-head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}
+  .step-head-left{display:flex;align-items:center;gap:7px;min-width:0;flex:1;}
+  .step-num{font-family:var(--sans);font-size:11px;color:#fff;background:var(--ink);border-radius:50%;width:18px;height:18px;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .step-title-text{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .step-sub{font-family:var(--sans);font-size:11px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .step-head-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .role-chip{font-family:var(--sans);font-size:11px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--paper-edge);
+    border-radius:99px;padding:3px 9px;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}
+  .role-lock{font-size:10px;}
+  .step-guide-btn{width:22px;height:22px;border-radius:50%;border:1px solid var(--accent-soft);background:var(--paper);
+    color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;line-height:1;padding:0;font-family:var(--sans);}
+  .step-guide-btn:hover{background:var(--accent-bg);}
+  .step-guide-btn[aria-expanded="true"]{background:var(--accent);color:var(--paper);border-color:var(--accent);}
+  .step-guide-popover{background:var(--accent-bg);border:1px dashed var(--accent-soft);border-radius:4px;padding:11px 14px;
+    margin:8px 13px 0;font-family:var(--sans);font-size:12px;color:var(--ink-soft);line-height:1.7;}
+  .step-guide-popover strong{color:var(--accent);display:block;margin-bottom:4px;font-size:12.5px;}
+  .step-guide-popover ol{margin:6px 0 0;padding-left:22px;}
+  .step-guide-popover li{margin-bottom:3px;}
+  .step-guide-popover li b{color:var(--ink);}
+
+  .stage-strip{display:flex;align-items:center;gap:0;padding:11px 13px 12px;border-bottom:1px dotted var(--paper-edge);background:#fffdf7;}
+  .strip-item{flex:1;display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:11.5px;color:var(--ink-faint);
+    background:transparent;border:none;cursor:pointer;padding:4px 2px;border-radius:3px;transition:.14s;text-align:left;}
+  .strip-item:hover{color:var(--ink);}
+  .strip-item .dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:600;border:1.5px solid var(--paper-edge);background:var(--paper);color:var(--ink-faint);flex-shrink:0;transition:.14s;}
+  .strip-item.active{color:var(--accent);font-weight:600;}
+  .strip-item.active .dot{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .strip-item.done{color:var(--ink-soft);}
+  .strip-item.done .dot{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent);}
+  .strip-item:disabled{cursor:default;}
+  .strip-line{height:1px;background:var(--paper-edge);flex:0 0 8px;margin:0 -2px;}
+
+  .step-body{padding:6px 13px 13px;}
+  .stage-pane{font-family:var(--serif);}
+  .lead-chip{font-family:var(--sans);font-size:12.5px;color:var(--ink-soft);background:var(--accent-bg);
+    border-left:2px solid var(--accent-soft);padding:6px 10px;border-radius:0 3px 3px 0;margin:10px 0 8px;line-height:1.5;}
+
+  /* ===== ch03 专属：三栏输入 ===== */
+  .tri-cols{display:flex;flex-direction:column;gap:10px;margin:6px 0 4px;}
+  .tri-col{background:var(--paper-light);border:1px solid var(--paper-edge);border-radius:4px;padding:7px 9px 8px;}
+  .tri-col .col-head{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+  .tri-col .col-dot{width:11px;height:11px;border-radius:50%;flex:none;}
+  .tri-col .col-label{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink);}
+  .tri-col .col-sub{font-family:var(--sans);font-size:10.5px;color:var(--ink-faint);}
+  .tri-col .col-count{margin-left:auto;font-family:var(--sans);font-size:11px;color:var(--ink-faint);}
+  .tri-col .col-count.ok{color:var(--green);font-weight:600;}
+  .item-row{display:flex;flex-direction:column;gap:3px;background:#fffdf7;border:1px solid var(--paper-edge);
+    border-radius:4px;padding:6px 8px;margin-bottom:5px;}
+  .item-row .item-text{font-family:var(--serif);font-size:13px;line-height:1.4;color:var(--ink);
+    background:transparent;border:none;outline:none;width:100%;min-width:0;padding:1px 0;}
+  .item-row .item-text::placeholder{color:var(--ink-faint);font-size:12.5px;}
+  .item-row .row-tools{display:flex;align-items:center;gap:6px;padding-top:3px;border-top:1px dotted var(--paper-edge);}
+  .item-row.ghost .item-text,.item-row.ghost .item-note{color:var(--ink-faint);}
+  .item-row.ghost .row-tools{border-top-color:transparent;}
+  .item-row .item-note{font-family:var(--sans);font-size:11px;color:var(--ink-soft);background:transparent;
+    border:none;border-top:1px dotted var(--paper-edge);outline:none;padding-top:3px;width:100%;min-width:0;line-height:1.35;}
+  .item-row .item-note::placeholder{color:var(--ink-faint);font-size:10.5px;}
+  .row-del{font-family:var(--sans);font-size:12px;color:var(--ink-faint);background:transparent;border:none;cursor:pointer;padding:2px 4px;margin-left:auto;}
+  .row-del:hover{color:#a23b2b;}
+  .col-add{font-family:var(--sans);font-size:12px;color:var(--accent);background:transparent;border:1px dashed var(--accent-soft);
+    border-radius:3px;padding:5px 9px;cursor:pointer;width:100%;transition:.16s;}
+  .col-add:hover{background:var(--accent-bg);}
+
+  .ref-line{font-family:var(--sans);font-size:10.5px;color:var(--ink-faint);margin:8px 2px 10px;line-height:1.45;}
+  .guide-q{font-family:var(--sans);margin:8px 2px 10px;border:1px dashed var(--accent-soft);border-radius:4px;background:var(--accent-bg);padding:8px 11px;}
+  .guide-q summary{cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;outline:none;}
+  .guide-q ol{margin:8px 0 0;padding-left:22px;font-size:12px;color:var(--ink-soft);line-height:1.7;}
+  .guide-q li{margin-bottom:4px;word-break:break-word;}
+
+  /* ===== ch03 专属：三圆维恩图 ===== */
+  .venn-wrap{margin:8px 0 4px;}
+  .venn-cap{font-family:var(--sans);font-size:11px;color:var(--ink-faint);text-align:center;margin-bottom:8px;}
+  /* 三栏并列陈列（替代几何维恩图：窄栏不截、本质=陈列 + AI 语义结论） */
+  .display-cols{display:flex;gap:8px;align-items:stretch;}
+  @media (max-width:520px){ .display-cols{flex-wrap:wrap;} .display-col{flex:1 1 100%;} }
+  .display-col{
+    flex:1 1 0;min-width:0;border:1.5px solid;border-radius:9px;background:rgba(255,255,255,.38);
+    padding:8px 8px 9px;display:flex;flex-direction:column;transition:.2s;
+  }
+  .display-col .dc-label{font-family:var(--sans);font-size:11px;font-weight:600;text-align:center;margin-bottom:5px;flex:none;}
+  .display-col .dc-items{flex:1;overflow-y:auto;max-height:140px;padding:0 2px;font-family:var(--sans);font-size:10.5px;line-height:1.5;color:var(--ink);}
+  .display-col .dc-items .ci{margin-bottom:3px;padding-left:8px;position:relative;word-break:break-word;}
+  .display-col .dc-items .ci::before{content:"·";position:absolute;left:0;color:var(--ink-faint);}
+  .display-col .dc-items .ci.empty{color:var(--ink-faint);font-style:italic;padding-left:0;}
+  .display-col .dc-items .ci.empty::before{content:"";}
+  .display-col.c-like{border-color:var(--c-like);}
+  .display-col.c-like .dc-label{color:var(--c-like);}
+  .display-col.c-talent{border-color:var(--c-talent);}
+  .display-col.c-talent .dc-label{color:var(--c-talent);}
+  .display-col.c-import{border-color:var(--c-important);}
+  .display-col.c-import .dc-label{color:var(--c-important);}
+  /* 交集卡片（AI 语义结论，非几何交点） */
+  .inter-card{
+    margin-top:9px;border:1.5px dashed var(--accent);border-radius:9px;background:rgba(255,255,255,.82);
+    padding:9px 11px;text-align:center;box-shadow:var(--shadow-sm);
+  }
+  .inter-card .ic-title{font-family:var(--sans);font-size:10.5px;color:var(--accent);font-weight:600;margin-bottom:4px;}
+  .inter-card .ic-val{font-family:var(--serif);font-size:12px;line-height:1.45;color:var(--ink);}
+  .inter-card .ic-note{font-family:var(--sans);font-size:9px;color:var(--ink-faint);margin-top:5px;line-height:1.35;}
+  .venn-mode-note{font-family:var(--sans);font-size:10px;color:var(--ink-faint);text-align:center;margin-top:7px;line-height:1.4;}
+
+  /* 预填示例（演示用，真实网站不预填） */
+  .item-row.demo{background:rgba(122,77,43,.05);border:1px dashed var(--accent-soft);padding:4px 7px;border-radius:3px;}
+  .item-row.demo .item-text{font-style:italic;color:var(--ink-soft);}
+  .demo-badge{font-family:var(--sans);font-size:9px;color:#fff;background:var(--accent-soft);border-radius:2px;padding:1px 4px;margin-bottom:3px;align-self:flex-start;flex:none;}
+  .demo-clear{font-family:var(--sans);font-size:10.5px;color:var(--accent);background:transparent;border:1px dashed var(--accent-soft);border-radius:3px;padding:3px 8px;cursor:pointer;margin-left:auto;transition:.16s;}
+  .demo-clear:hover{background:var(--accent-bg);}
+
+  /* AI commentary */
+  .ai-comment{font-family:var(--serif);font-size:13.5px;color:var(--ink);background:var(--paper-light);
+    border:1px solid var(--accent-soft);border-radius:4px;padding:11px 13px;margin:12px 0;line-height:1.7;}
+  .ai-comment .who{font-family:var(--sans);font-size:11px;color:var(--accent);display:block;margin-bottom:6px;letter-spacing:.04em;}
+  .ai-comment ul{margin:6px 0;padding-left:20px;}
+  .ai-comment li{margin-bottom:4px;}
+  .ai-comment b{color:var(--accent);}
+
+  /* 归一化三清单（阶段2展示 / 阶段3可编辑） */
+  .norm-list{margin:10px 0;font-family:var(--sans);}
+  .norm-list .nl-head{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+  .norm-list .nl-dot{width:10px;height:10px;border-radius:50%;}
+  .norm-list .nl-label{font-size:12.5px;font-weight:600;color:var(--ink);}
+  .norm-list .nl-sub{font-size:10.5px;color:var(--ink-faint);}
+  .norm-list textarea{width:100%;font-family:var(--serif);font-size:12.5px;color:var(--ink);background:#fffdf7;
+    border:1px solid var(--paper-edge);border-radius:4px;padding:7px 9px;outline:none;resize:vertical;min-height:48px;line-height:1.6;}
+  .norm-list textarea:focus{border-color:var(--accent-soft);}
+  .norm-list.readonly .nl-box{font-family:var(--serif);font-size:12.5px;line-height:1.6;color:var(--ink);
+    background:#fffdf7;border:1px solid var(--paper-edge);border-radius:4px;padding:7px 9px;}
+
+  .inter-val{font-family:var(--serif);font-size:13.5px;color:var(--ink);background:var(--accent-bg);
+    border:1px solid var(--accent-soft);border-radius:4px;padding:10px 12px;margin:10px 0;line-height:1.6;}
+  .inter-val .lab{font-family:var(--sans);font-size:11px;color:var(--accent);display:block;margin-bottom:4px;}
+
+  .main-tag{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--accent);margin:12px 0 4px;}
+  .guide-small{font-family:var(--sans);font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.6;}
+  .saved-state{display:none;font-family:var(--sans);font-size:12px;color:var(--green);background:rgba(77,107,63,.10);
+    border:1px solid var(--green);border-radius:3px;padding:7px 11px;margin-top:10px;}
+  .saved-state.show{display:block;}
+
+  .settle-note{font-family:var(--sans);font-size:12.5px;color:var(--ink-soft);background:var(--paper-light);
+    border:1px solid var(--paper-edge);border-left:3px solid var(--accent-soft);border-radius:0 4px 4px 0;padding:11px 13px;margin:12px 0;}
+  .settle-note b{color:var(--accent);}
+  .settle-hint{font-family:var(--sans);font-size:11.5px;color:var(--ink-faint);line-height:1.6;margin:6px 0 10px;}
+
+  .step-complete{background:rgba(77,107,63,.06);border:1px solid var(--green);border-radius:0 0 4px 4px;
+    margin:0;border-top:1px solid var(--green);padding:14px;font-family:var(--sans);}
+  .step-complete .title{font-size:13px;font-weight:600;color:var(--green);margin-bottom:5px;}
+  .step-complete > div:nth-child(2){font-size:12px;color:var(--ink);line-height:1.6;margin-bottom:8px;}
+  .step-complete .btn-row{margin-top:6px;}
+  .step-card.submitted .stage-strip{opacity:.7;}
+  .step-card.submitted .step-body{display:none;}
+
+  .side-pane::-webkit-scrollbar{width:8px;}
+  .side-pane::-webkit-scrollbar-thumb{background:var(--accent-soft);border-radius:99px;}
+
+  /* ---------- Mobile ---------- */
+  @media (max-width:860px){
+    .reader.three-col{grid-template-columns:1fr;gap:16px;padding:16px 14px 50px;}
+    .step-nav{order:1;} .chapter-content{order:2;}
+    .side-panel{order:3;position:static;top:auto;}
+    .side-pane{max-height:none;}
+    .top-bar{flex-wrap:wrap;gap:10px;padding:10px 14px;}
+    .top-bar .chap-info{min-width:auto;}
+    .progress-wrap{order:3;flex-basis:100%;}
+    .nav-btns{margin-left:auto;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== prototype banner ===== -->
+<div style="background:#3b2a18;color:#f1e8d2;font-family:-apple-system,'PingFang SC',sans-serif;font-size:12.5px;padding:8px 22px;border-bottom:1px solid #7a4d2b;display:flex;gap:14px;align-items:center;">
+  <span style="background:#f1e8d2;color:#7a4d2b;padding:2px 7px;border-radius:2px;font-size:11px;letter-spacing:1px;">原型</span>
+  <span><b>可点击 HTML 原型（操作验证用）。</b>本文件完整呈现 ch03「三圆交集练习」的 <b>1 个 step 容器 = 内部 4 阶段切换</b>，三列布局（顶栏 / 左 step-nav / 中 chapter-content / 右 side-panel）严格沿用 ch02 v2 视觉，与真实页面 localhost:3011/?chapter=ch03 一致。AI 分析为前端模拟，无后端。</span>
+  <a href="ch02_exercise_mockup_v2.html" style="color:#d8c4a3;margin-left:auto;text-decoration:underline;">对照 ch02 v2 原型</a>
+</div>
+
+<!-- ===== Top bar ===== -->
+<header class="top-bar">
+  <div class="chap-info">
+    <span class="k">第三章 · 练习</span>
+    <span class="v">三圆交集练习</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-label" id="progressLabel">阶段 1 / 4 · 填写中</span>
+  </div>
+  <div class="nav-btns">
+    <button class="nav-btn" disabled>← 上一章</button>
+    <button class="nav-btn" id="nextChapBtn">下一章 →</button>
+  </div>
+</header>
+
+<!-- ===== Reader 3-col ===== -->
+<div class="reader three-col">
+
+  <!-- Left: step-nav -->
+  <nav class="step-nav">
+    <div class="nav-title">本章步骤</div>
+    <div class="item active" data-step="1">
+      <span class="dot"><span>1</span></span>
+      <span class="txt"><span class="t1">填写三圆</span><span class="t2">列喜欢/擅长/重要</span></span>
+    </div>
+    <div class="item" data-step="2">
+      <span class="dot"><span>2</span></span>
+      <span class="txt"><span class="t1">AI 辅助分析</span><span class="t2">映照 + 取交集</span></span>
+    </div>
+    <div class="item" data-step="3">
+      <span class="dot"><span>3</span></span>
+      <span class="txt"><span class="t1">确认并锁定</span><span class="t2">三要素定稿</span></span>
+    </div>
+    <div class="item" data-step="4">
+      <span class="dot"><span>4</span></span>
+      <span class="txt"><span class="t1">沉淀归档</span><span class="t2">记入你的档案</span></span>
+    </div>
+  </nav>
+
+  <!-- Center: chapter-content -->
+  <article class="chapter-content">
+    <p class="book-title">《你要如何衡量你的人生》</p>
+    <h1>能最快找到想做的事的公式：自我认知法</h1>
+    <p class="chap-sub">第三章 · 喜欢 × 擅长 × 重要 三要素框架</p>
+
+    <span class="lead-chip">先别急着想"要做什么"，先把三件事想清楚</span>
+
+    <p>这一章给你一个最朴素的公式：<strong>真正想做的事 = 喜欢 × 擅长 × 重要</strong> 三者的交集。迷茫往往是因为我们把其中某一维当成了全部。</p>
+
+    <div class="formula">
+      <b>公式 1</b>：喜欢 × 擅长 = 想做的事（What × How）<br>
+      <b>公式 2</b>：喜欢 × 擅长 × 重要 = 真正想做的事（What × How × Why）
+    </div>
+
+    <h2>三个要素，别再混淆</h2>
+    <ul class="def-list">
+      <li><b>喜欢</b> = 能让你沉浸、忘记时间的<b>领域或活动</b>（如心理学、设计），不是一份具体工作或「想成为的人」。</li>
+      <li><b>擅长</b> = 天生的<b>才能（talent）</b>：自然而然做得好、不痛苦；≠ 后天学的技能/知识（编程/英语会过时）。</li>
+      <li><b>重要</b> = 由<b>价值观</b>驱动的「Being 状态」：想怎样生活（自由/安心），或想帮到谁。</li>
+    </ul>
+
+    <div class="quote">三个寻找顺序：① 喜欢只是手段，先找重要的事；② 先找擅长（建立自信）再找喜欢；③ 实现手段（博客/YouTube/创业）最后再考虑。</div>
+
+    <p>下面这个练习，就是把「喜欢 / 擅长 / 重要」分别列进三个圆，让 AI 帮你纠正两类常见混淆、引导拆解，并标出三者重叠的「真正想做的事（初版）」——它会作为种子，被第 4–8 章一路回响、深化。</p>
+  </article>
+
+  <!-- Right: side-panel -->
+  <aside class="side-panel">
+    <div class="side-tabs">
+      <div class="st" data-tab="summary">摘要</div>
+      <div class="st" data-tab="chat">对话</div>
+      <div class="st active" data-tab="steps">步骤</div>
+      <div class="st" data-tab="notes">笔记</div>
+    </div>
+
+    <!-- 摘要 -->
+    <div class="side-pane" data-pane="summary">
+      <div class="pane-empty">本章还在进行中。<br>完成后这里会显示：你的三要素初版、以及「真正想做的事（初版）」——它们会作为种子被第 4–8 章引用。</div>
+    </div>
+
+    <!-- 对话 -->
+    <div class="side-pane" data-pane="chat">
+      <div class="chat-bubble mentor">刘老师：我们顺着第二章往下走。你还记得第一章我们澄清过的几个误区吗？比如"稳定体面""同事都考 CPA"这些外部声音——它们不是你的方向，只是别人的期待。</div>
+      <div class="chat-bubble me">嗯，我记得。所以这一章才要先想"重要"和"擅长"，别一上来就被"喜欢"带跑。</div>
+      <div class="chat-bubble mentor">对。右边"步骤"里把三个圆填一填，尤其「重要」先想。填完我陪你一起看交集在哪。</div>
+    </div>
+
+    <!-- 步骤 -->
+    <div class="side-pane active" data-pane="steps">
+      <div class="step-card" id="ch03StepCard">
+
+        <!-- step head -->
+        <div class="step-head">
+          <div class="step-head-row">
+            <div class="step-head-left">
+              <span class="step-num">①</span>
+              <span class="step-title-text">三圆交集练习</span>
+            </div>
+            <div class="step-head-right">
+              <span class="role-chip" title="题目指定角色，运行时不可改">心理咨询师 <span class="role-lock">🔒</span></span>
+              <button class="step-guide-btn" id="stepGuideBtn" aria-label="操作提示" aria-expanded="false">?</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作提示 -->
+        <div class="step-guide-popover" id="stepGuidePopover" hidden>
+          <strong>操作提示</strong>
+          <ol>
+            <li><b>阶段 1 填写</b>：把"重要 / 擅长 / 喜欢"各列 3–5 项（建议按此顺序）。右侧三圆会随你输入实时陈列。</li>
+            <li><b>阶段 2 AI 分析</b>：点"让 AI 帮你找交集"，得到「心理咨询师映照（纠正混淆）+ 归一化三清单 + 真正想做的事（初版）」。</li>
+            <li><b>阶段 3 确认并锁定</b>：三清单哪条不同意直接改，点"确认并保存"——重要的事与交集会一路陪你到第七章；喜欢/擅长会在第 5、6 章自动升级。</li>
+            <li><b>阶段 4 沉淀</b>：写档完成态。任何时候"重新做本章"都会建新草稿，原档案保留。</li>
+          </ol>
+        </div>
+
+        <!-- 内部 4 阶段进度条 -->
+        <div class="stage-strip" id="stageStrip" role="tablist" aria-label="章节内 4 阶段">
+          <button class="strip-item active" data-target="1" role="tab" aria-selected="true"><span class="dot">1</span><span class="lbl">填写</span></button>
+          <span class="strip-line"></span>
+          <button class="strip-item" data-target="2" role="tab" aria-selected="false"><span class="dot">2</span><span class="lbl">AI 分析</span></button>
+          <span class="strip-line"></span>
+          <button class="strip-item" data-target="3" role="tab" aria-selected="false"><span class="dot">3</span><span class="lbl">确认并锁定</span></button>
+          <span class="strip-line"></span>
+          <button class="strip-item" data-target="4" role="tab" aria-selected="false"><span class="dot">4</span><span class="lbl">沉淀</span></button>
+        </div>
+
+        <!-- step body（JS 切换） -->
+        <div class="step-body" id="stepBody"></div>
+
+        <!-- 完成态 -->
+        <div class="step-complete" id="stepComplete" hidden>
+          <div class="title">我们已经了解了你的信息</div>
+          <div>三要素初版与「真正想做的事（初版）」已记入你的档案。第 4 章定价值观、第 7 章组合时，导师会回响这一条种子。</div>
+          <div class="btn-row">
+            <button class="btn ghost" id="redoBtn">重新做本章（建新草稿）</button>
+            <button class="btn" id="chatBtn">和导师聊聊 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 笔记 -->
+    <div class="side-pane" data-pane="notes">
+      <div class="note-line">喜欢 × 擅长 × 重要 = 真正想做的事。</div>
+      <div class="note-line">喜欢 = 领域/活动，不是职业名。</div>
+      <div class="note-line">擅长 = 天生才能，不是技能/知识。</div>
+      <div class="note-line">重要 = 价值观（Being 状态）。</div>
+      <div class="note-line">顺序：先重要 → 再擅长 → 最后喜欢。</div>
+    </div>
+  </aside>
+</div>
+
+<!-- ============ 阶段模板 ============ -->
+<template id="tpl-stage-1">
+  <div class="stage-pane">
+    <div class="hint-card">
+      <span class="hc-lbl">填写顺序建议</span>
+      <b>先想清楚什么对你真正重要（价值观）</b> → 再想你天生擅长什么（才能）→ 最后才想喜欢什么（领域）。别一上来就陷在"喜欢"里——那是本书提醒的第一个误区。
+    </div>
+
+    <div class="tri-cols" id="triCols">
+      <!-- 三栏由 JS 生成：重要 / 擅长 / 喜欢 -->
+    </div>
+
+    <p class="ref-line">参考：有人写"会编程"被 AI 提醒这是技能不是才能，改成了"把复杂讲清楚"；有人写"YouTuber"被提醒那是职业名，改成了"表达/表演"。</p>
+
+    <!-- ui_context 回响块（设计侧确认 2026-08-09）：数据来自步骤详情接口返回的 ui_context.external_voices（后端按 ui_context.references 过滤、按误区编号升序、空则整块隐藏）；仅 UI 提示，不入步骤分析 prompt、不写入 user_answers、不作 LLM 证据 -->
+    <div class="ref-line" id="uiContext" style="border-left:3px solid var(--accent);padding-left:10px;">
+      <b>第一章回响 · 别被这些外部声音带跑</b>
+      <div style="margin-top:4px;">· <b>误区 3 · 必须是对别人有益的事</b>：我爸总说选错行一辈子就完了</div>
+      <div>· <b>误区 5 · 想做的事不能成为工作</b>：同事都考 CPA，我也得考</div>
+    </div>
+
+    <details class="guide-q">
+      <summary>想不出？参考这 4 个引导问题</summary>
+      <ol>
+        <li>你做哪件事时会忘记时间、做完还意犹未尽？</li>
+        <li>别人常常夸你、或遇事爱向你请教的是哪方面？</li>
+        <li>有什么事让你觉得「就算没人要求，我也想做」？</li>
+        <li>如果删掉所有「应该做」的事，剩下你真正在乎的是什么？</li>
+      </ol>
+    </details>
+
+    <!-- 三圆陈列（替代几何维恩图：窄栏不截；交集为 AI 语义结论） -->
+    <div class="venn-wrap">
+      <div class="venn-cap">三圆陈列（重叠区语义结论待 AI 回填，前端不做几何求交）</div>
+      <div class="display-cols" id="venn">
+      <div class="display-col c-import"><div class="dc-label">重要</div><div class="dc-items" data-c="importance"></div></div>
+      <div class="display-col c-talent"><div class="dc-label">擅长</div><div class="dc-items" data-c="talents"></div></div>
+      <div class="display-col c-like"><div class="dc-label">喜欢</div><div class="dc-items" data-c="likes"></div></div>
+      </div>
+      <div class="inter-card">
+        <div class="ic-title">真正想做的事</div>
+        <div class="ic-val" id="vennCenter">待 AI 总结</div>
+        <div class="ic-note">交集不是几何计算，是 AI 语义总结</div>
+      </div>
+      <div class="venn-mode-note">提示：三栏只是把你的清单陈列出来；真正的交集要等阶段 2 由 AI 基于三者语义总结，不会机械求交。</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="demo-clear" id="clearDemoBtn" type="button">清空示例数据</button>
+      <button class="btn ghost" id="saveDraftBtn">保存草稿</button>
+      <button class="btn" id="runLlmBtn">下一步：让 AI 帮你找交集 →</button>
+    </div>
+    <div class="toast" id="toast"></div>
+  </div>
+</template>
+
+<template id="tpl-stage-2">
+  <div class="stage-pane">
+    <div class="ai-comment" id="aiComment">
+      <span class="who">心理咨询师 · 映照（AI 的提醒）</span>
+      <span id="commentBody"></span>
+    </div>
+
+    <div class="norm-list readonly">
+      <div class="nl-head"><span class="nl-dot" style="background:var(--c-important)"></span><span class="nl-label">重要的事（初版）</span><span class="nl-sub">AI 仅建议，你可在阶段 3 改</span></div>
+      <div class="nl-box" id="normImportance"></div>
+    </div>
+    <div class="norm-list readonly">
+      <div class="nl-head"><span class="nl-dot" style="background:var(--c-talent)"></span><span class="nl-label">擅长的事（初版）</span><span class="nl-sub">AI 已把"技能"重分类为才能</span></div>
+      <div class="nl-box" id="normTalents"></div>
+    </div>
+    <div class="norm-list readonly">
+      <div class="nl-head"><span class="nl-dot" style="background:var(--c-like)"></span><span class="nl-label">喜欢的事（初版）</span><span class="nl-sub">AI 已把"职业名"拆成领域</span></div>
+      <div class="nl-box" id="normLikes"></div>
+    </div>
+
+    <div class="inter-val">
+      <span class="lab">你真正想做的事（初版）· 只读，不可编辑</span>
+      <span id="interDraft"></span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn ghost" id="backToStage1">← 返回阶段 1 修改</button>
+      <button class="btn ghost" id="rerunBtn">换一种说法</button>
+      <button class="btn" id="gotoStage3Btn">进入阶段 3 确认 →</button>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-stage-3">
+  <div class="stage-pane">
+    <div class="main-tag">三要素定稿（可改）</div>
+    <p class="guide-small">上面是 AI 帮你理清的三要素（初版）。哪条你不同意可以直接改；确认后点"确认并保存"。其中「重要的事」和「真正想做的事（初版）」会一路陪你到第七章；「喜欢/擅长」我们会在第 5、6 章带你深挖、自动升级成更准的版本——所以这里先放手写，不用追求完美。</p>
+
+    <div class="norm-list">
+      <div class="nl-head"><span class="nl-dot" style="background:var(--c-important)"></span><span class="nl-label">重要的事</span></div>
+      <textarea id="editImportance"></textarea>
+    </div>
+    <div class="norm-list">
+      <div class="nl-head"><span class="nl-dot" style="background:var(--c-talent)"></span><span class="nl-label">擅长的事</span></div>
+      <textarea id="editTalents"></textarea>
+    </div>
+    <div class="norm-list">
+      <div class="nl-head"><span class="nl-dot" style="background:var(--c-like)"></span><span class="nl-label">喜欢的事</span></div>
+      <textarea id="editLikes"></textarea>
+    </div>
+
+    <div class="inter-val">
+      <span class="lab">你真正想做的事（初版）· 只读，不可编辑</span>
+      <span id="interLocked"></span>
+    </div>
+
+    <p class="ref-line">对交集不满意？可回阶段 1 修改三栏，或回阶段 2 点「换一种说法」再让 AI 看一遍（交集只读，但可反复重跑得到更贴合的版本）。</p>
+
+    <div class="btn-row">
+      <button class="btn ghost" id="backToStage2">← 返回阶段 2 看分析</button>
+      <button class="btn" id="confirmBtn">确认并保存</button>
+    </div>
+    <div class="saved-state" id="savedState">✓ 已保存 — 三要素与交集已记入档案。「重要的事」与「真正想做的事（初版）」之后不会被改写；「喜欢/擅长」会在第 5、6 章升级。</div>
+  </div>
+</template>
+
+<template id="tpl-stage-4">
+  <div class="stage-pane">
+    <div class="saved-state show">✓ 已保存并锁定 — 三要素初版与「真正想做的事（初版）」已记入档案。其中「重要的事」与「交集」会保值到第七章；「喜欢 / 擅长」将在第 5、6 章自动升级（不编辑本章原稿）。</div>
+
+    <div class="inter-val" style="margin-top:12px;">
+      <span class="lab">你真正想做的事（初版）· 已沉淀</span>
+      <span id="settleInter"></span>
+    </div>
+
+    <div class="settle-note">
+      它们会作为<b>种子</b>被后续章节回响：
+      <ul style="margin:8px 0 0;padding-left:20px;font-family:var(--sans);font-size:12.5px;line-height:1.7;">
+        <li><b>第 4 章（价值观）</b>会引用你的「重要的事」："这件事还是你最在乎的吗？"</li>
+        <li><b>第 5 / 6 章</b>会重新深化「擅长 / 喜欢」，自动升级成更准的版本（不编辑本章原稿）。</li>
+        <li><b>第 7 章（组合）</b>会拿你最初的「真正想做的事（初版）」起手，合起来看。</li>
+      </ul>
+    </div>
+    <div class="settle-hint">视图上"沉淀"看起来像结束——其实每章都可重做并把新结论沉淀下来。想先和导师聊聊这版交集，点下方继续。</div>
+    <div class="btn-row">
+      <button class="btn ghost" id="redoBtn2">重新做本章（建新草稿）</button>
+      <button class="btn" id="chatBtn2">和导师聊聊这件事 →</button>
+    </div>
+  </div>
+</template>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- tab 切换 ---------- */
+  var tabs = document.querySelectorAll(".side-tabs .st");
+  var panes = document.querySelectorAll(".side-pane");
+  function switchTab(name){
+    tabs.forEach(function(x){ x.classList.remove("active"); });
+    panes.forEach(function(x){ x.classList.remove("active"); });
+    var t = document.querySelector('.side-tabs .st[data-tab="'+name+'"]');
+    var p = document.querySelector('.side-pane[data-pane="'+name+'"]');
+    if (t) t.classList.add("active");
+    if (p) p.classList.add("active");
+  }
+  tabs.forEach(function(t){
+    t.addEventListener("click", function(){ switchTab(t.getAttribute("data-tab")); });
+  });
+
+  /* ---------- 数据状态 ---------- */
+  // 三栏顺序：重要 → 擅长 → 喜欢（决策）
+  var COLS = [
+    { key:"importance", label:"重要的事", sub:"你真正在乎的状态", color:"var(--c-important)" },
+    { key:"talents",    label:"擅长的事", sub:"天生不痛苦就能做好的", color:"var(--c-talent)" },
+    { key:"likes",      label:"喜欢的事", sub:"你一做就忘记时间的领域", color:"var(--c-like)" }
+  ];
+
+  // 预设（含两类混淆示范，方便操作验证）：技能当才能、职业名当喜欢
+  // 注意：demo:true = 仅原型演示用的示例数据；真实网站里 state 为空，需用户填写后 submit_step 才生成
+  var state = {
+    importance: [
+      { text:"家人健康", note:"你真正在乎的状态", demo:true },
+      { text:"帮助别人成长", note:"看到别人变好就开心", demo:true },
+      { text:"做有意义的事", note:"", demo:true }
+    ],
+    talents: [
+      { text:"写代码", note:"别人夸我学得快", ghost:true, demo:true },
+      { text:"英语好", note:"工作需要", ghost:true, demo:true },
+      { text:"很会安慰人", note:"朋友遇事都找我倾诉", demo:true }
+    ],
+    likes: [
+      { text:"心理学", note:"一读就停不下来", demo:true },
+      { text:"设计", note:"喜欢把东西变好看", demo:true },
+      { text:"YouTuber", note:"想当网红", ghost:true, demo:true }
+    ]
+  };
+
+  // AI 模拟输出（小A 式，按上面预设派生）
+  var AI_VARIANTS = [
+    {
+      comment: "你列的清单里藏着两个常见混淆，我们先分清楚：\n\n- **把「技能/知识」当成「擅长」**：你写的「写代码」「英语好」是后天学的技能和知识，会过时也会累；真正的可能性是——你**天生不痛苦就能做很久**的是什么？「很会安慰人」更靠近才能：朋友遇事都找你，说明你有天然共情力。\n- **把「职业名/实现手段」当成「喜欢」**：「YouTuber」是职业身份、也是实现手段，不是领域本身。你底层喜欢的也许是「表达 / 表演 / 让人看见」？把「设计」再拆一下：你喜欢的到底是视觉秩序感，还是「帮人把想法变好看」？\n\n不用急着改，三件事各自列清楚，交集自然就出来了。",
+      norm: {
+        importance:["家人健康","帮助别人成长","做有意义的事"],
+        talents:["把复杂讲清楚","共情安慰","逻辑拆解"],
+        likes:["心理学","视觉设计","表达 / 表演"]
+      },
+      inter: "用清晰的逻辑和共情，帮人把复杂的事理顺、也看清自己。"
+    },
+    {
+      comment: "换个角度映照：你的清单其实已经很有线索了。\n\n- **擅长**别急着写「写代码」——那是工具。退一步问：你用工具时，哪个瞬间最不累？很可能是「把别人讲不明白的东西讲明白」这件事本身让你上瘾，这才是才能。\n- **喜欢**里「YouTuber」我们先放下「当网红」这个结果，去看过程：你享受的是「被看见、被回应」还是「创作本身」？前者更接近表达，后者更接近导演/设计。\n\n把「重要」稳稳放在中心，喜欢和擅长都绕着它转，交集会更清楚。",
+      norm: {
+        importance:["家人健康","帮助别人成长","做有意义的事"],
+        talents:["化繁为简","共情倾听","逻辑拆解"],
+        likes:["心理学","视觉与体验设计","表达 / 创作"]
+      },
+      inter: "站在「帮助别人成长」这个中心，用你能讲清、能共情的方式，陪人把混乱变清楚。"
+    }
+  ];
+  var aiIdx = 0;
+  var normalized = null;     // 阶段2 计算后的三清单
+  var intersection = "";     // 阶段2 计算的 intersection
+
+  /* ---------- stage 驱动 ---------- */
+  var card = document.getElementById("ch03StepCard");
+  var body = document.getElementById("stepBody");
+  var stripBtns = document.querySelectorAll("#stageStrip .strip-item");
+  var completeBox = document.getElementById("stepComplete");
+  var currentStage = 1;
+  var lastReachedStage = 1;
+  var PROG_LABELS = ["填写中","AI 分析中","确认中","已归档"];
+  var PROG_PCT = [5,38,71,100];
+
+  function renderStage(n){
+    var tpl = document.getElementById("tpl-stage-" + n);
+    if (!tpl) return;
+    body.innerHTML = "";
+    body.appendChild(tpl.content.cloneNode(true));
+    currentStage = n;
+    setProgress(n);
+    syncStrip();
+    bindStageActions(n);
+    syncLeftStepNav(n);
+  }
+  function setProgress(n){
+    var fill = document.getElementById("progressFill");
+    var label = document.getElementById("progressLabel");
+    if (fill)  fill.style.width = PROG_PCT[n-1] + "%";
+    if (label) label.textContent = "阶段 " + n + " / 4 · " + PROG_LABELS[n-1];
+  }
+  function syncStrip(){
+    stripBtns.forEach(function(b){
+      var t = parseInt(b.getAttribute("data-target"),10);
+      b.classList.toggle("active", t === currentStage);
+      b.classList.toggle("done",   t <  currentStage);
+      b.setAttribute("aria-selected", t === currentStage ? "true" : "false");
+      b.disabled = t > lastReachedStage;
+    });
+  }
+  function syncLeftStepNav(n){
+    document.querySelectorAll(".step-nav .item").forEach(function(it){
+      var s = parseInt(it.getAttribute("data-step"),10);
+      it.classList.toggle("active", s === n);
+      if (s <= n && s < 4) it.classList.add("submitted");
+      else it.classList.remove("submitted");
+    });
+  }
+  stripBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      var n = parseInt(b.getAttribute("data-target"),10);
+      if (n > lastReachedStage) return;
+      renderStage(n);
+    });
+  });
+  document.querySelectorAll(".step-nav .item").forEach(function(it){
+    it.addEventListener("click", function(){
+      switchTab("steps");
+      var s = parseInt(it.getAttribute("data-step"),10);
+      if (s <= lastReachedStage) renderStage(s);
+    });
+  });
+
+  /* ? 操作提示 */
+  var guideBtn = document.getElementById("stepGuideBtn");
+  var guideBox = document.getElementById("stepGuidePopover");
+  guideBtn.addEventListener("click", function(){
+    var opened = guideBtn.getAttribute("aria-expanded") === "true";
+    guideBtn.setAttribute("aria-expanded", opened ? "false" : "true");
+    guideBox.hidden = opened;
+  });
+
+  /* ---------- toast ---------- */
+  function flashToast(msg){
+    var t = document.getElementById("toast");
+    if (!t){ alert(msg); return; }
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(flashToast._h);
+    flashToast._h = setTimeout(function(){ t.classList.remove("show"); }, 2800);
+  }
+
+  /* ---------- 三栏渲染 ---------- */
+  function buildRow(col, item){
+    var row = document.createElement("div");
+    row.className = "item-row" + (item.ghost ? " ghost" : "") + (item.demo ? " demo" : "");
+
+    if (item.demo){
+      var badge = document.createElement("span");
+      badge.className = "demo-badge"; badge.textContent = "示例";
+      row.appendChild(badge);
+    }
+
+    var txt = document.createElement("input");
+    txt.className = "item-text"; txt.type = "text";
+    txt.placeholder = "写下一项" + col.label;
+    txt.value = item.text || "";
+
+    var note = document.createElement("input");
+    note.className = "item-note"; note.type = "text";
+    note.placeholder = "备注（为什么？可留空）";
+    note.value = item.note || "";
+
+    var tools = document.createElement("div");
+    tools.className = "row-tools";
+    var del = document.createElement("button");
+    del.className = "row-del"; del.type="button"; del.textContent="✕"; del.title="删除";
+    del.addEventListener("click", function(){
+      row.remove();
+      collectCol(col.key);
+      refreshCol(col.key);
+      updateVenn();
+    });
+    tools.appendChild(del);
+
+    txt.addEventListener("input", function(){ row.classList.remove("ghost"); refreshCol(col.key); updateVenn(); });
+    note.addEventListener("input", function(){ row.classList.remove("ghost"); refreshCol(col.key); updateVenn(); });
+
+    row.appendChild(txt); row.appendChild(note); row.appendChild(tools);
+    return row;
+  }
+
+  function pruneEmpty(key){
+    state[key] = state[key].filter(function(it){ return (it.text||"").trim().length > 0; });
+  }
+
+  function renderTriCols(){
+    var wrap = document.getElementById("triCols");
+    wrap.innerHTML = "";
+    COLS.forEach(function(col){
+      var box = document.createElement("div");
+      box.className = "tri-col"; box.dataset.col = col.key;
+
+      var head = document.createElement("div");
+      head.className = "col-head";
+      head.innerHTML = '<span class="col-dot" style="background:'+col.color+'"></span>' +
+        '<span class="col-label">'+col.label+'</span>' +
+        '<span class="col-sub">'+col.sub+'</span>' +
+        '<span class="col-count" data-count="'+col.key+'"></span>';
+      box.appendChild(head);
+
+      var list = document.createElement("div");
+      list.className = "col-list"; list.dataset.list = col.key;
+      (state[col.key]||[]).forEach(function(it){ list.appendChild(buildRow(col, it)); });
+      box.appendChild(list);
+
+      var add = document.createElement("button");
+      add.className = "col-add"; add.type="button"; add.textContent = "+ 添加一项";
+      add.addEventListener("click", function(){
+        if ((state[col.key]||[]).length >= 5) return flashToast("每类最多 5 项。");
+        state[col.key].push({ text:"", note:"" });
+        list.appendChild(buildRow(col, { text:"", note:"" }));
+        refreshCol(col.key); updateVenn();
+      });
+      box.appendChild(add);
+
+      wrap.appendChild(box);
+    });
+    refreshAllCounts();
+    updateVenn();
+  }
+
+  function collectCol(key){
+    // 从当前 DOM 读回（保留用户输入），并同步到 state
+    var list = document.querySelector('.col-list[data-list="'+key+'"]');
+    if (!list){ return; }
+    var rows = list.querySelectorAll(".item-row");
+    var arr = [];
+    rows.forEach(function(r){
+      var t = r.querySelector(".item-text").value.trim();
+      var n = r.querySelector(".item-note").value.trim();
+      if (t.length || n.length) arr.push({ text:t, note:n });
+    });
+    state[key] = arr;
+  }
+
+  function refreshCol(key){
+    var el = document.querySelector('.col-count[data-count="'+key+'"]');
+    if (!el) return;
+    var n = (state[key]||[]).filter(function(it){ return (it.text||"").trim().length>0; }).length;
+    el.textContent = n + " / 3+";
+    el.classList.toggle("ok", n >= 3);
+  }
+  function refreshAllCounts(){ COLS.forEach(function(c){ refreshCol(c.key); }); }
+
+  /* ---------- 维恩图实时陈列（读当前 DOM，边填边陈列） ---------- */
+  function updateVenn(){
+    COLS.forEach(function(col){
+      var box = document.querySelector('.dc-items[data-c="'+col.key+'"]');
+      if (!box) return;
+      box.innerHTML = "";
+      var list = document.querySelector('.col-list[data-list="'+col.key+'"]');
+      var items = [];
+      if (list){
+        list.querySelectorAll(".item-row").forEach(function(r){
+          var t = r.querySelector(".item-text");
+          if (t && t.value.trim()) items.push(t.value.trim());
+        });
+      }
+      if (!items.length){
+        box.innerHTML = '<div class="ci empty">还没填</div>';
+        return;
+      }
+      items.forEach(function(t){
+        var d = document.createElement("div");
+        d.className = "ci"; d.textContent = t;
+        box.appendChild(d);
+      });
+    });
+  }
+
+  /* ---------- markdown 极简渲染（仅 **粗体** 与换行） ---------- */
+  function mdLite(s){
+    return s
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+      .replace(/\n/g, "<br>");
+  }
+
+  /* ---------- 阶段交互绑定 ---------- */
+  function bindStageActions(n){
+    if (n===1) bindStage1();
+    if (n===2) bindStage2();
+    if (n===3) bindStage3();
+    if (n===4) bindStage4();
+  }
+
+  function bindStage1(){
+    renderTriCols();
+
+    document.getElementById("clearDemoBtn").addEventListener("click", function(){
+      var removed = 0;
+      COLS.forEach(function(c){
+        state[c.key] = (state[c.key]||[]).filter(function(it){ return !it.demo; });
+        removed++;
+      });
+      // 每栏至少留一个空行，方便继续填
+      COLS.forEach(function(c){
+        if (!(state[c.key]||[]).length) state[c.key].push({ text:"", note:"" });
+      });
+      renderTriCols();
+      flashToast("示例已清空；现在请你自己填写（真实网站默认就是这个状态）。");
+    });
+
+    document.getElementById("saveDraftBtn").addEventListener("click", function(){
+      flashToast("草稿已保存到本地；下次进来可继续填写。");
+    });
+
+    document.getElementById("runLlmBtn").addEventListener("click", function(){
+      var bad = null;
+      COLS.forEach(function(c){
+        collectCol(c.key);
+        var n = (state[c.key]||[]).filter(function(it){ return (it.text||"").trim().length>0; }).length;
+        if (n < 3) bad = c.label;
+      });
+      if (bad) return flashToast("「"+bad+"」至少列 3 项才能取交集（每类 3–5 项）。");
+
+      // 模拟 AI 计算
+      var v = AI_VARIANTS[aiIdx];
+      normalized = v.norm;
+      intersection = v.inter;
+      lastReachedStage = Math.max(lastReachedStage, 2);
+      flashToast("心理咨询师正在分析…");
+      setTimeout(function(){ renderStage(2); }, 650);
+    });
+  }
+
+  function bindStage2(){
+    var v = AI_VARIANTS[aiIdx];
+    document.getElementById("commentBody").innerHTML = mdLite(v.comment);
+    document.getElementById("normImportance").textContent = v.norm.importance.join("、");
+    document.getElementById("normTalents").textContent = v.norm.talents.join("、");
+    document.getElementById("normLikes").textContent = v.norm.likes.join("、");
+    document.getElementById("interDraft").textContent = v.inter;
+
+    document.getElementById("backToStage1").addEventListener("click", function(){ renderStage(1); });
+    document.getElementById("gotoStage3Btn").addEventListener("click", function(){
+      lastReachedStage = Math.max(lastReachedStage, 3);
+      renderStage(3);
+    });
+    document.getElementById("rerunBtn").addEventListener("click", function(){
+      aiIdx = (aiIdx + 1) % AI_VARIANTS.length;
+      var v = AI_VARIANTS[aiIdx];
+      normalized = v.norm;
+      intersection = v.inter;
+      renderStage(2);
+      flashToast("已换一种说法重新映照。");
+    });
+  }
+
+  function bindStage3(){
+    document.getElementById("editImportance").value = normalized.importance.join("、");
+    document.getElementById("editTalents").value = normalized.talents.join("、");
+    document.getElementById("editLikes").value = normalized.likes.join("、");
+    document.getElementById("interLocked").textContent = intersection;
+
+    document.getElementById("backToStage2").addEventListener("click", function(){ renderStage(2); });
+    document.getElementById("confirmBtn").addEventListener("click", function(){
+      if (this.dataset.done) return;
+      // 用户覆盖：读回编辑框写回 normalized（演示"用户可改"）
+      normalized.importance = document.getElementById("editImportance").value.split(/[、,，]/).map(function(s){return s.trim();}).filter(Boolean);
+      normalized.talents    = document.getElementById("editTalents").value.split(/[、,，]/).map(function(s){return s.trim();}).filter(Boolean);
+      normalized.likes      = document.getElementById("editLikes").value.split(/[、,，]/).map(function(s){return s.trim();}).filter(Boolean);
+
+      // 先显示"已保存"反馈，再进入阶段 4 沉淀
+      var ss = document.getElementById("savedState");
+      if (ss) ss.classList.add("show");
+      this.dataset.done = "1";
+      setTimeout(function(){
+        // 整步进入"已归档"态：进入阶段 4 沉淀视图（含 ch4–ch8 回响）
+        lastReachedStage = 4;
+        syncStrip();
+        var fill = document.getElementById("progressFill");
+        var label = document.getElementById("progressLabel");
+        if (fill) fill.style.width = "100%";
+        if (label) label.textContent = "阶段 4 / 4 · 已归档";
+        syncLeftStepNav(4);
+        var item3 = document.querySelector('.step-nav .item[data-step="3"]');
+        if (item3) item3.classList.add("submitted");
+        renderStage(4);
+      }, 900);
+    });
+  }
+
+  function bindStage4(){
+    var si = document.getElementById("settleInter");
+    if (si) si.textContent = intersection;
+    document.getElementById("chatBtn2").addEventListener("click", function(){ switchTab("chat"); });
+    document.getElementById("redoBtn2").addEventListener("click", function(){
+      if (!confirm("重新做本章会建一份新草稿，原档案保留。\n确定开始？")) return;
+      lastReachedStage = 1;
+      aiIdx = 0;
+      renderStage(1);
+    });
+  }
+
+  document.getElementById("redoBtn").addEventListener("click", function(){
+    if (!confirm("重新做本章会建一份新草稿，原档案保留。\n确定开始？")) return;
+    card.classList.remove("submitted");
+    completeBox.hidden = true;
+    lastReachedStage = 1;
+    aiIdx = 0;
+    renderStage(1);
+  });
+  document.getElementById("chatBtn").addEventListener("click", function(){ switchTab("chat"); });
+  document.getElementById("nextChapBtn").addEventListener("click", function(){
+    flashToast("（原型）下一章入口占位：ch04 价值观。");
+  });
+
+  /* 启动 */
+  renderStage(1);
+})();
+</script>
+</body>
+</html>

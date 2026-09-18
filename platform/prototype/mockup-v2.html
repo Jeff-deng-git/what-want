@@ -1,0 +1,765 @@
+<!--
+  Mockup v2 — Landing page + reading page + mentor chat
+  Static HTML for visual review only. No backend wired.
+  Open: http://localhost:8080/?variant=mockup-v2
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Want — Mockup v2</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --fg: #2a2a2a;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-2: #1d4ed8;
+    --border: #e5e7eb;
+    --card: #ffffff;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+  }
+
+  /* Mockup-only nav tab */
+  .mockup-tabs {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 10px 24px;
+    display: flex; gap: 8px;
+    font-size: 13px;
+  }
+  .mockup-tabs a {
+    color: #888; text-decoration: none;
+    padding: 6px 14px; border-radius: 999px;
+  }
+  .mockup-tabs a:hover { color: #fff; }
+  .mockup-tabs a.active { background: var(--accent); color: #fff; }
+  .mockup-tabs .label { color: #888; align-self: center; margin-right: auto; }
+
+  /* === Section: Landing page === */
+  body.show-landing .screen:not(.landing) { display: none; }
+  body.show-reading .screen:not(.reading) { display: none; }
+  body.show-mentor .screen:not(.mentor) { display: none; }
+
+  .screen { padding-top: 50px; }
+
+  /* Landing */
+  .landing {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  .landing-hero {
+    text-align: center;
+    padding: 40px 0 32px;
+  }
+  .landing-hero h1 {
+    font-size: 32px;
+    margin: 0 0 8px;
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .landing-hero p {
+    color: var(--muted);
+    margin: 0;
+    font-size: 15px;
+  }
+  .landing-hero .meta {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+  .continue-card {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+  .continue-card .info .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+  .continue-card .info h2 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .continue-card .info p {
+    margin: 0;
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .continue-card .arrow {
+    font-size: 28px;
+    opacity: 0.7;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 24px 0 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .chapter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .chapter-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.03);
+  }
+  .chapter-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+  }
+  .chapter-card .num {
+    display: inline-block;
+    background: #eef2ff;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .chapter-card .title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .chapter-card .meta {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 12px;
+  }
+  .chapter-card .progress-bar {
+    height: 4px;
+    background: #f3f4f6;
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .chapter-card .progress-bar > div {
+    height: 100%;
+    background: var(--success);
+    border-radius: 2px;
+  }
+
+  /* === Section: Reading page === */
+  .reading {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 12px 24px 100px;
+  }
+  .reading .chapter-content {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 56px 64px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    margin-top: 24px;
+  }
+  .reading h1 {
+    font-size: 28px;
+    margin: 0 0 24px;
+    color: #1f2937;
+  }
+  .reading p {
+    font-size: 15px;
+    line-height: 1.85;
+    margin: 12px 0;
+    color: #374151;
+  }
+  .reading .quote {
+    border-left: 3px solid var(--accent);
+    background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-style: italic;
+  }
+  .reading .h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 28px 0 12px;
+    color: #111827;
+    border-left: 3px solid var(--accent);
+    padding-left: 12px;
+  }
+  .reading .footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  /* === Section: Mentor chat panel === */
+  .mentor {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 80px 24px 40px;
+  }
+  .mentor-stage {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 40px;
+    margin-bottom: 16px;
+    min-height: 400px;
+  }
+  .mentor-stage h2 {
+    font-size: 22px;
+    margin: 0 0 4px;
+  }
+  .mentor-stage .chapter-meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .mentor-stage .summary-card {
+    background: linear-gradient(135deg, #faf5ff 0%, #eff6ff 100%);
+    border: 1px solid #e0e7ff;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .mentor-stage .summary-card .label {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .mentor-stage .summary-card p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #1f2937;
+  }
+  .mentor-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 480px;
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    box-shadow: -8px 0 24px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+  }
+  .mentor-panel .head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mentor-panel .head .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .mentor-panel .head .info { flex: 1; }
+  .mentor-panel .head .info .name {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .mentor-panel .head .info .role {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .mentor-panel .head .close {
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0 4px;
+  }
+  .mentor-panel .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f9fafb;
+  }
+  .mentor-panel .msg {
+    margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+  }
+  .mentor-panel .msg.mentor { flex-direction: row; }
+  .mentor-panel .msg.user { flex-direction: row-reverse; }
+  .mentor-panel .msg .bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .mentor-panel .msg.mentor .bubble {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .mentor-panel .msg.user .bubble {
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .mentor-panel .msg .avatar-sm {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .mentor-panel .msg.user .avatar-sm {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+  .mentor-panel .msg .name-tag {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .mentor-panel .input-area {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--card);
+  }
+  .mentor-panel .input-area textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    resize: none;
+    height: 60px;
+    font-family: inherit;
+  }
+  .mentor-panel .input-area textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+  }
+  .mentor-panel .input-area .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+  .mentor-panel .input-area .hint {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .mentor-panel .input-area button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .mentor-panel .input-area button:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+  }
+  .mentor-panel .typing {
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: fit-content;
+  }
+  .mentor-panel .typing span {
+    width: 6px; height: 6px;
+    background: #9ca3af;
+    border-radius: 50%;
+    animation: blink 1.4s infinite;
+  }
+  .mentor-panel .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .mentor-panel .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink {
+    0%, 60%, 100% { opacity: 0.3; }
+    30% { opacity: 1; }
+  }
+
+  /* === Top sticky progress bar (reading page) === */
+  .top-bar {
+    position: sticky;
+    top: 50px;  /* below mockup-tabs */
+    z-index: 40;
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    margin: 0 -24px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .top-bar .ch-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .top-bar .ch-info .crumb {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .top-bar .ch-info .title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .top-bar .progress-track {
+    width: 140px;
+    height: 4px;
+    background: #f3f4f6;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .top-bar .progress-track > div {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, #7c3aed 100%);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+  .top-bar .progress-text {
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 32px;
+    text-align: right;
+  }
+  .top-bar .nav-btn {
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--fg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .top-bar .nav-btn:disabled {
+    color: #d1d5db;
+    cursor: not-allowed;
+  }
+  .top-bar .nav-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .top-bar .nav-btn.home {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .top-bar .nav-btn.home:hover {
+    background: var(--accent-2);
+    color: #fff;
+  }
+  .top-bar .nav-icon {
+    width: 14px; height: 14px;
+    speak: none;
+  }
+
+  /* === Mentor trigger button (reading page) === */
+  .mentor-trigger {
+    margin-top: 24px;
+    text-align: center;
+  }
+  .mentor-trigger button {
+    background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.08);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mentor-trigger button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 8px 20px rgba(0,0,0,0.12);
+  }
+  .mentor-trigger .hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body class="show-landing">
+
+<div class="mockup-tabs">
+  <span class="label">📐 Mockup v2 — 3 个新界面</span>
+  <a href="#landing" class="tab-link active" data-target="landing">1. 导航页</a>
+  <a href="#reading" class="tab-link" data-target="reading">2. 阅读页</a>
+  <a href="#mentor" class="tab-link" data-target="mentor">3. 导师对话</a>
+</div>
+
+<!-- ======================================== -->
+<!-- SCREEN 1: Landing page (chapter list)    -->
+<!-- ======================================== -->
+<div class="screen landing">
+  <div class="landing">
+    <div class="landing-hero">
+      <h1>What Want · 章节导航</h1>
+      <p>《如何找到想做的事》— 八木仁平 · 自我认知工作流</p>
+      <div class="meta">10 章节 · 8 步流程 · 估算 6 小时</div>
+    </div>
+
+    <!-- Continue reading card -->
+    <div class="continue-card">
+      <div class="info">
+        <span class="badge">📖 继续上次的阅读</span>
+        <h2>第四章 找到指引人生的指南针：重要的事</h2>
+        <p>上次阅读 2 天前 · 进度 64% · 步骤 3/5 已提交</p>
+      </div>
+      <div class="arrow">→</div>
+    </div>
+
+    <div class="section-title">全部章节</div>
+    <div class="chapter-grid">
+      <div class="chapter-card">
+        <span class="num">序</span>
+        <p class="title">序言</p>
+        <div class="meta"><span>📖 14.2 KB</span><span>未读</span></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">CH 1</span>
+        <p class="title">阻碍找到想做的事的5种误区</p>
+        <div class="meta"><span>📖 11.4 KB</span><span>✅ 已读</span></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">CH 2</span>
+        <p class="title">我们为什么会因为找不到想做的事而迷茫</p>
+        <div class="meta"><span>📖 12.9 KB</span><span>未读</span></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">CH 3</span>
+        <p class="title">能最快找到想做的事的公式：自我认知法</p>
+        <div class="meta"><span>📖 35.9 KB · 最长</span><span>未读</span></div>
+      </div>
+      <div class="chapter-card" style="border-color: var(--accent); background: #f0f9ff;">
+        <span class="num">CH 4</span>
+        <p class="title">找到指引人生的指南针：重要的事</p>
+        <div class="meta"><span>📖 35.2 KB</span><span>🔄 阅读中 64%</span></div>
+        <div class="progress-bar"><div style="width: 64%"></div></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">CH 5</span>
+        <p class="title">只要找到擅长的事，就可以应用到工作中</p>
+        <div class="meta"><span>📖 23.1 KB</span><span>未读</span></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">CH 6</span>
+        <p class="title">找到喜欢的事，和努力说再见</p>
+        <div class="meta"><span>📖 15.3 KB</span><span>未读</span></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">CH 7</span>
+        <p class="title">找到真正想做的事，活出真实的自己</p>
+        <div class="meta"><span>📖 14.5 KB</span><span>未读</span></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">CH 8</span>
+        <p class="title">施展自我认知的魔法，使人生发生翻天覆地的变化</p>
+        <div class="meta"><span>📖 12.2 KB</span><span>未读</span></div>
+      </div>
+      <div class="chapter-card">
+        <span class="num">Q</span>
+        <p class="title">问题清单（参考）</p>
+        <div class="meta"><span>📋 29.1 KB</span><span>未读</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================== -->
+<!-- SCREEN 2: Reading page with top sticky nav -->
+<!-- ======================================== -->
+<div class="screen reading">
+  <div class="reading">
+    <div class="top-bar">
+      <button class="nav-btn home" title="返回目录">⌂ 目录</button>
+      <div class="ch-info">
+        <div class="crumb">第 4 章 / 共 8 章</div>
+        <div class="title">找到指引人生的指南针：重要的事</div>
+      </div>
+      <div class="progress-track"><div style="width: 64%"></div></div>
+      <div class="progress-text">64%</div>
+      <button class="nav-btn" title="上一章">← 第三章</button>
+      <button class="nav-btn" title="下一章">第五章 →</button>
+    </div>
+
+    <div class="chapter-content">
+      <h1>第四章 找到指引人生的指南针：重要的事</h1>
+      <p>找到"想做的事"之前，最重要的事是找到你的"价值观"。</p>
+      <p class="quote">"动机由价值观决定。如果没有清晰的价值观，就不会有持续的动力。目标和价值观的区别在于：目标是阶段性的，达成即换；价值观是底层的，会反复回归。"</p>
+      <div class="h2">为什么价值观是"指南针"</div>
+      <p>动机由价值观决定。如果没有清晰的价值观，就不会有持续的动力。目标和价值观的区别在于：目标是阶段性的，达成即换；价值观是底层的，会反复回归。</p>
+      <p>价值观不像目标那样可以"完成"，它是一种持续的状态。本章会通过 5 个步骤帮你梳理自己的价值观：第一到三步收集信息，第四步排序，第五步定义工作目的。</p>
+      <div class="h2">5个步骤找出真正的价值观</div>
+      <p>第一到三步收集信息，第四步排序，第五步定义工作目的。</p>
+      <p>接下来请按右侧的步骤进行自我反思。每一个步骤都是后续分析的基础。</p>
+    </div>
+
+    <div class="mentor-trigger">
+      <button>💬 沟通导师 · 深入理解本章</button>
+      <div class="hint">基于本章内容 · 循序渐进的深度挖掘</div>
+    </div>
+
+    <div class="footer">
+      ← 第三章 · 自我认知法 &nbsp;|&nbsp; 第五章 · 擅长的事 →
+    </div>
+  </div>
+</div>
+
+<!-- ======================================== -->
+<!-- SCREEN 3: Mentor chat panel (slide-in)    -->
+<!-- ======================================== -->
+<div class="screen mentor">
+  <div class="mentor">
+    <div class="mentor-stage">
+      <h2>第四章 找到指引人生的指南针：重要的事</h2>
+      <div class="chapter-meta">八木仁平 · 《如何找到想做的事》</div>
+
+      <div class="summary-card">
+        <div class="label">🤖 本章 AI 总结</div>
+        <p>本章提出用 5 个步骤找出价值观。第一到三步收集信息（提问、提炼关键词、元反思），第四步排序（从最重要到最不重要），第五步定义工作目的。核心观点：价值观是底层的指南针，决定动机；目标只是阶段性的里程碑。</p>
+      </div>
+
+      <p style="color: var(--muted); font-size: 14px;">
+        👈 点击右下角的 <strong>"💬 沟通导师"</strong> 按钮打开对话面板。<br>
+        导师会根据本章内容主动引导你深入思考，不是照本宣科。
+      </p>
+    </div>
+  </div>
+
+  <!-- Slide-in chat panel -->
+  <div class="mentor-panel">
+    <div class="head">
+      <div class="avatar">导</div>
+      <div class="info">
+        <div class="name">刘老师</div>
+        <div class="role">职业规划导师 · 基于本章内容</div>
+      </div>
+      <div class="close">×</div>
+    </div>
+
+    <div class="messages">
+      <div class="msg mentor">
+        <div class="avatar-sm">导</div>
+        <div>
+          <div class="name-tag">刘老师</div>
+          <div class="bubble">你好，欢迎来到第四章。我注意到你说"找到想做的事"——但在跳进 5 个问题之前，我想先和你聊一件事。</div>
+        </div>
+      </div>
+
+      <div class="msg mentor">
+        <div class="avatar-sm">导</div>
+        <div>
+          <div class="bubble">本章把"价值观"比作指南针，把"目标"比作终点。如果让你想象 10 年后的一个工作日，你最希望醒来那一刻心里是什么样的感觉？不需要具体职位，只描述那个感觉。</div>
+        </div>
+      </div>
+
+      <div class="msg user">
+        <div class="avatar-sm">你</div>
+        <div>
+          <div class="bubble">大概是早上醒来不焦虑，知道今天要做的事有意义，然后做完能感到满足。</div>
+        </div>
+      </div>
+
+      <div class="msg mentor">
+        <div class="avatar-sm">导</div>
+        <div>
+          <div class="bubble">很好。注意你说的三个词："不焦虑"、"有意义"、"满足"。如果我们这是第一次听到你的价值观，我想先验证一下——这三个词里，哪一个在你过去的工作/学习中已经有过"是这种感觉"的真实经历？</div>
+        </div>
+      </div>
+
+      <div class="typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <textarea placeholder="输入你的想法，导师会基于本章内容继续追问…"></textarea>
+      <div class="controls">
+        <span class="hint">Enter 发送 · Shift+Enter 换行</span>
+        <button>发送</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Tab-style navigation between mockup screens
+  document.querySelectorAll('.mockup-tabs a').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = a.dataset.target;
+      document.body.className = 'show-' + target;
+      document.querySelectorAll('.mockup-tabs a').forEach(x => x.classList.remove('active'));
+      a.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

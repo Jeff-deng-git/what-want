@@ -1,0 +1,100 @@
+"""LLM roles CRUD. M3."""
+import json
+import uuid
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+
+from app.db import get_conn
+
+router = APIRouter(prefix="/api/roles", tags=["roles"])
+
+
+class RoleIn(BaseModel):
+    name: str
+    description: str
+    system_prompt: str
+    provider: str
+    model: str
+    temperature: float = 0.7
+    max_tokens: int = 2000
+    enabled: bool = True
+
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    system_prompt: Optional[str] = None
+    provider: Optional[str] = None
+    model: Optional[str] = None
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+    enabled: Optional[bool] = None
+
+
+@router.get("")
+def list_roles(enabled_only: bool = False):
+    with get_conn() as conn:
+        if enabled_only:
+            rows = conn.execute(
+                "SELECT * FROM llm_roles WHERE enabled = 1 ORDER BY created_at"
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM llm_roles ORDER BY created_at"
+            ).fetchall()
+    return [dict(r) for r in rows]
+
+
+@router.post("")
+def create_role(body: RoleIn):
+    role_id = str(uuid.uuid4())
+    with get_conn() as conn:
+        conn.execute(
+            """INSERT INTO llm_roles
+               (id, name, description, system_prompt, provider, model,
+                temperature, max_tokens, enabled, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))""",
+            (role_id, body.name, body.description, body.system_prompt,
+             body.provider, body.model, body.temperature, body.max_tokens,
+             1 if body.enabled else 0),
+        )
+    return {"id": role_id, "ok": True}
+
+
+@router.put("/{role_id}")
+def update_role(role_id: str, body: RoleUpdate):
+    updates = []
+    params = []
+    for field in ("name", "description", "system_prompt", "provider", "model"):
+        val = getattr(body, field)
+        if val is not None:
+            updates.append(f"{field} = ?")
+            params.append(val)
+    if body.temperature is not None:
+        updates.append("temperature = ?"); params.append(body.temperature)
+    if body.max_tokens is not None:
+        updates.append("max_tokens = ?"); params.append(body.max_tokens)
+    if body.enabled is not None:
+        updates.append("enabled = ?"); params.append(1 if body.enabled else 0)
+    if not updates:
+        raise HTTPException(400, "Nothing to update")
+    updates.append("updated_at = datetime('now')")
+    params.append(role_id)
+
+    with get_conn() as conn:
+        cur = conn.execute(
+            f"UPDATE llm_roles SET {', '.join(updates)} WHERE id = ?", params
+        )
+        if cur.rowcount == 0:
+            raise HTTPException(404, f"Role {role_id} not found")
+    return {"ok": True}
+
+
+@router.delete("/{role_id}")
+def delete_role(role_id: str):
+    with get_conn() as conn:
+        cur = conn.execute("DELETE FROM llm_roles WHERE id = ?", (role_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(404, f"Role {role_id} not found")
+    return {"ok": True}

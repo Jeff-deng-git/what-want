@@ -1,0 +1,87 @@
+"""What Want FastAPI main."""
+import logging
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.config import FRONTEND_ORIGIN
+from app.db import init_db
+from app.routers.book import router as book_router
+from app.routers.book_images import router as book_images_router
+from app.routers.notes import router as notes_router
+from app.routers.roles import router as roles_router
+from app.routers.steps import router as steps_router
+from app.routers.summary import router as summary_router
+from app.routers.chat import router as chat_router
+from app.routers.questions import router as questions_router
+
+logging.basicConfig(level=logging.INFO)
+
+app = FastAPI(title="What Want", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[FRONTEND_ORIGIN, "http://localhost:3011", "http://127.0.0.1:3011"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(book_router)
+app.include_router(book_images_router)
+app.include_router(notes_router)
+app.include_router(roles_router)
+app.include_router(steps_router)
+app.include_router(summary_router)
+app.include_router(chat_router)
+app.include_router(questions_router)
+
+
+# Chapter config shortcut (top-level, not under /steps/{step_id})
+@book_router.get("/chapters/{chapter_id}/config")
+def get_chapter_full_config(chapter_id: str):
+    """获取章节的完整 step 配置（前端用于初始化）。"""
+    from app.db import get_conn
+    import json
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT config_json FROM chapter_configs WHERE chapter_id = ? AND active = 1 ORDER BY version DESC LIMIT 1",
+            (chapter_id,),
+        ).fetchone()
+    if not row:
+        return {"chapter_id": chapter_id, "steps": []}
+    cfg = json.loads(row["config_json"])
+    # Convert new exercises[] format to legacy steps[] for frontend (M5.2 patch).
+    if cfg.get("exercises") and not cfg.get("steps"):
+        steps = []
+        for ex in cfg["exercises"]:
+            sid = ex.get("step_id") or ex.get("name", "")
+            role_id = ex.get("step_role_id", "")
+            output_fields = ex.get("output_fields", []) or []
+            schema_type = "structured" if output_fields else "markdown"
+            steps.append({
+                "step_id": sid,
+                "title": ex.get("name", sid),
+                "instruction": ex.get("instruction", ""),
+                "user_action": ex.get("user_action", ""),
+                "worksheet": ex.get("worksheet", ""),
+                "output_fields": output_fields,
+                "llm_op": {"role_id": role_id, "output_schema": {"type": schema_type, "fields": output_fields}},
+                "user_input": {"questions": [{"id": sid + "-q1", "text": ex.get("instruction", "")}]},
+            })
+        cfg["steps"] = steps
+    return cfg
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+
+@app.get("/")
+def root():
+    return {"name": "What Want backend", "status": "ok"}
+
+
+@app.get("/api/health")
+def health():
+    return {"ok": True}

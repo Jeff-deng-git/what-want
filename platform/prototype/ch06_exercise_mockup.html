@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第六章原型 · 喜欢的事（热情）</title>
+<style>
+  :root{
+    --paper:#f6efde; --paper-edge:#ebe1c8; --paper-light:#faf4e3;
+    --ink:#2a2620; --ink-soft:#6b6354; --ink-faint:#9a917f; --accent:#7a4d2b; --accent-soft:#b88a5e; --accent-bg:#f1e8d2;
+    --rule:#d9cfb6; --shadow:0 4px 16px rgba(60,45,25,.10); --green:#3a7d44;
+    --serif:"Source Han Serif SC","Noto Serif SC","Songti SC","SimSun",serif;
+    --sans:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:
+     radial-gradient(120% 120% at 50% 0%, #fbf6ea 0%, var(--paper) 55%, var(--paper-edge) 100%);
+     color:var(--ink);font-family:var(--serif);font-size:15px;line-height:1.7;}
+  .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;
+    padding:10px 18px;background:var(--paper-light);border-bottom:1px solid var(--rule);
+    box-shadow:0 2px 8px rgba(60,45,25,.06);}
+  .topbar .menu{font-size:18px;color:var(--accent);cursor:pointer;}
+  .crumbs{color:var(--ink-soft);font-size:13px;}
+  .crumbs b{color:var(--ink);font-weight:600;}
+  .topbar .title{margin-left:auto;font-weight:600;color:var(--accent);letter-spacing:.5px;}
+
+  .reader.three-col{display:grid;grid-template-columns:190px 1fr 340px;gap:20px;max-width:1180px;margin:0 auto;padding:22px 24px 60px;}
+  @media (max-width:880px){ .reader.three-col{grid-template-columns:1fr;gap:16px;padding:16px 14px 50px;} }
+
+  .step-nav{font-family:var(--sans);}
+  .step-nav .nav-title{font-size:12px;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase;margin:0 0 12px 4px;}
+  .step-nav .item{display:flex;align-items:flex-start;gap:10px;padding:9px 10px;border-radius:6px;cursor:pointer;transition:.15s;margin-bottom:6px;}
+  .step-nav .item:hover{background:var(--paper-light);}
+  .step-nav .item .dot{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--accent-soft);
+    color:var(--accent);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+  .step-nav .item .txt{display:flex;flex-direction:column;line-height:1.3;}
+  .step-nav .item .txt .t1{font-size:13px;color:var(--ink);font-weight:500;}
+  .step-nav .item .txt .t2{font-size:11px;color:var(--ink-faint);}
+  .step-nav .item.active{background:var(--accent-bg);}
+  .step-nav .item.active .dot{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .step-nav .item.submitted .dot{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent);}
+  .step-nav .item.submitted .dot::after{content:"✓";}
+  .step-nav .item.submitted .dot span{display:none;}
+  .step-nav .hint{font-size:11px;color:var(--ink-soft);margin-top:16px;line-height:1.6;padding:0 4px;}
+
+  .chapter-content{font-family:var(--serif);}
+  .chapter-content .book-title{font-size:12px;color:var(--accent);letter-spacing:.05em;margin:0 0 3px;}
+  .chapter-content h1{font-size:20px;line-height:1.4;margin:0 0 5px;color:var(--ink);font-weight:600;}
+  .chapter-content .chap-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 16px;font-family:var(--sans);}
+  .chapter-content h2{font-size:16px;margin:22px 0 8px;color:var(--ink);}
+  .chapter-content p{margin:0 0 14px;color:var(--ink);}
+  .chapter-content .lead-chip{display:inline-block;font-family:var(--sans);font-size:13px;background:var(--accent-bg);
+    border-left:2px solid var(--accent-soft);padding:6px 10px;border-radius:0 3px 3px 0;margin:4px 0 12px;line-height:1.5;}
+  .chapter-content .quote{border-left:3px solid var(--accent-soft);background:var(--paper-light);padding:12px 16px;
+    margin:0 0 14px;font-size:13.5px;color:var(--ink-soft);}
+  .chapter-content .quote b{color:var(--accent);}
+  .chapter-content ul.def-list{margin:0 0 14px;padding-left:20px;}
+  .chapter-content ul.def-list li{margin-bottom:6px;}
+  #stepFocus{margin-top:18px;background:var(--accent-bg);border:1px dashed var(--accent-soft);border-radius:6px;padding:12px 14px;font-family:var(--sans);font-size:13px;color:var(--ink-soft);line-height:1.7;}
+  #stepFocus .sf-title{display:block;color:var(--accent);font-weight:600;margin-bottom:4px;font-size:13.5px;}
+
+  .side-panel{border-left:1px solid var(--rule);background:rgba(250,244,227,.5);display:flex;flex-direction:column;min-height:70vh;}
+  .side-tabs{display:flex;border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--paper-light);z-index:5;}
+  .side-tabs .st{flex:1;text-align:center;padding:10px 2px;font-size:12.5px;cursor:pointer;color:var(--ink-soft);
+    border-bottom:2px solid transparent;font-family:var(--sans);transition:.15s;}
+  .side-tabs .st.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+  .side-pane{display:none;padding:14px;font-family:var(--sans);font-size:13px;color:var(--ink-soft);}
+  .side-pane.active{display:block;}
+  .pane-empty{color:var(--ink-faint);font-size:12.5px;line-height:1.7;}
+
+  .step-card{background:#fffdf7;border:1px solid var(--paper-edge);border-radius:8px;box-shadow:var(--shadow);overflow:hidden;font-family:var(--sans);}
+  .step-head{display:flex;flex-direction:column;gap:6px;padding:11px 13px 9px;border-bottom:1px solid var(--rule);background:var(--paper-light);}
+  .step-head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;}
+  .step-head-left{display:flex;align-items:center;gap:7px;min-width:0;flex:1;}
+  .step-num{font-size:11px;color:#fff;background:var(--ink);border-radius:50%;width:18px;height:18px;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .step-title-text{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .step-head-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .role-chip{font-size:11px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--paper-edge);
+    border-radius:99px;padding:3px 9px;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}
+  .step-guide-btn{width:22px;height:22px;border-radius:50%;border:1px solid var(--accent-soft);background:var(--paper);
+    color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;line-height:1;padding:0;}
+  .step-guide-popover{background:var(--accent-bg);border:1px dashed var(--accent-soft);border-radius:6px;padding:11px 14px;
+    margin:8px 13px 0;font-size:12px;color:var(--ink-soft);line-height:1.7;}
+  .step-guide-popover strong{color:var(--accent);display:block;margin-bottom:4px;font-size:12.5px;}
+  .step-guide-popover ol{margin:6px 0 0;padding-left:22px;}
+  .step-guide-popover li{margin-bottom:3px;}
+  .step-strip{display:flex;align-items:center;gap:0;padding:11px 13px 12px;border-bottom:1px dotted var(--paper-edge);background:#fffdf7;}
+  .strip-item{flex:1;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-faint);background:transparent;
+    border:none;cursor:pointer;padding:4px 2px;border-radius:3px;transition:.14s;text-align:left;font-family:var(--sans);}
+  .strip-item:hover{color:var(--ink);}
+  .strip-item .dot{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:600;border:1.5px solid var(--paper-edge);background:var(--paper);color:var(--ink-faint);flex-shrink:0;}
+  .strip-item.active{color:var(--accent);font-weight:600;}
+  .strip-item.active .dot{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .strip-item.done{color:var(--ink-soft);}
+  .strip-item.done .dot{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent);}
+  .strip-line{height:1px;background:var(--paper-edge);flex:0 0 6px;margin:0 -2px;}
+  .step-body{padding:13px;}
+
+  .counter{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:20px;
+    background:var(--accent-bg);border:1px solid var(--rule);font-size:13px;margin-bottom:12px;font-family:var(--sans);}
+  .counter b{color:var(--accent);font-size:15px;}
+  .counter.warn{border-color:#c98a3a;background:#fbeede;color:#9a5a16;}
+  .qcard{background:var(--paper-light);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
+  .qcard .q{font-weight:600;margin-bottom:8px;font-family:var(--serif);font-size:14.5px;}
+  .qcard .q small{display:block;font-weight:400;color:var(--ink-soft);font-size:12px;margin-top:3px;font-family:var(--sans);}
+  textarea{width:100%;min-height:74px;border:1px solid var(--rule);border-radius:8px;background:#fffdf8;padding:10px;
+    font-family:var(--serif);font-size:14px;color:var(--ink);resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg);}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:9px;cursor:pointer;
+    font-family:var(--serif);font-size:14px;border:1px solid var(--accent);background:var(--accent);color:#fff8ee;transition:.15s;}
+  .btn:hover{filter:brightness(1.06);}
+  .btn.ghost{background:transparent;color:var(--accent);}
+  .btn.sm{padding:6px 11px;font-size:13px;}
+  .btn.warn{border-color:#c98a3a;color:#9a5a16;background:#fbeede;}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px;font-family:var(--sans);}
+  .right{margin-left:auto;}
+  .outbox{margin-top:14px;background:var(--paper-light);border:1px solid var(--rule);border-left:4px solid var(--accent);
+    border-radius:10px;padding:14px 16px;}
+  .outbox h4{margin:0 0 8px;color:var(--accent);font-size:14px;letter-spacing:1px;font-family:var(--sans);}
+  .talent-chip{display:inline-block;padding:5px 12px;margin:4px 6px 0 0;border-radius:16px;background:var(--accent-bg);
+    border:1px solid var(--rule);font-size:13px;}
+  .trow{display:flex;flex-direction:column;gap:6px;padding:10px 12px;margin-bottom:9px;background:var(--paper-light);
+    border:1px solid var(--rule);border-radius:10px;}
+  .trow .tmain{display:flex;align-items:center;gap:9px;}
+  .trow .tname{flex:1;font-size:14px;font-family:var(--serif);font-weight:600;}
+  .trow .tag{font-size:11px;color:#9a5a16;background:#fbeede;border:1px solid #e6c79a;border-radius:10px;padding:1px 8px;margin-right:4px;font-family:var(--sans);}
+  .trow .aspects{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+  .trow .aspects input{flex:1;min-width:120px;padding:5px 9px;border:1px solid var(--rule);border-radius:7px;background:#fffdf8;font-family:var(--serif);font-size:13px;}
+  .trow .linked{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-family:var(--sans);}
+  .trow .lk{font-size:11px;background:var(--accent-bg);border:1px solid var(--rule);border-radius:10px;padding:1px 8px;color:var(--ink-soft);}
+  .trow .lk.add{cursor:pointer;color:var(--accent);border-style:dashed;}
+  .trow .lock,.trow .del{cursor:pointer;border:none;background:transparent;font-size:15px;padding:3px 5px;border-radius:6px;}
+  .trow .lock:hover,.trow .del:hover{background:var(--accent-bg);}
+  .trow.locked{border-color:var(--accent);background:#fbf3e3;}
+  .refbox{margin-top:8px;background:var(--paper-light);border:1px dashed var(--rule);border-radius:9px;padding:9px 11px;font-size:12px;color:var(--ink-soft);}
+  .refbox .reflabel{display:block;margin-bottom:5px;font-family:var(--sans);}
+  .trap{margin-top:10px;background:#fbf3e3;border:1px solid #e6c79a;border-left:4px solid #c98a3a;border-radius:9px;padding:10px 13px;font-size:12.5px;color:#7a5a2a;font-family:var(--sans);line-height:1.65;}
+  .trap b{color:var(--accent);}
+  .drawer-mask{position:fixed;inset:0;background:rgba(40,30,15,.35);z-index:40;display:none;}
+  .drawer-mask.show{display:block;}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:420px;max-width:92vw;background:var(--paper);z-index:50;
+    box-shadow:-6px 0 24px rgba(60,45,25,.2);transform:translateX(100%);transition:.25s;display:flex;flex-direction:column;}
+  .drawer.show{transform:none;}
+  .drawer header{padding:16px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:10px;}
+  .drawer header h3{margin:0;font-size:16px;color:var(--accent);font-family:var(--serif);}
+  .drawer .xtabs{display:flex;gap:6px;padding:8px 18px 0;}
+  .drawer .xtabs button{font-family:var(--sans);font-size:12px;padding:5px 11px;border-radius:14px;border:1px solid var(--rule);background:var(--paper-light);color:var(--ink-soft);cursor:pointer;}
+  .drawer .xtabs button.active{background:var(--accent);color:#fff8ee;border-color:var(--accent);}
+  .drawer .x{margin-left:auto;cursor:pointer;font-size:20px;color:var(--ink-soft);}
+  .drawer .search{padding:12px 18px;border-bottom:1px solid var(--rule);}
+  .drawer .search input{width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--rule);font-family:var(--serif);font-size:14px;background:#fffdf8;}
+  .drawer .list{flex:1;overflow:auto;padding:10px 18px;}
+  .ex{display:flex;gap:8px;align-items:center;padding:9px 10px;border-radius:8px;border:1px solid var(--rule);background:var(--paper-light);margin-bottom:8px;}
+  .ex .et{flex:1;font-size:14px;font-family:var(--serif);}
+  .manual{margin-top:16px;background:
+     linear-gradient(var(--paper-light),var(--paper-light)) padding-box,
+     repeating-linear-gradient(90deg,transparent 0 22px,var(--rule) 22px 23px) border-box;
+     border:1px solid var(--rule);border-radius:10px;padding:18px 20px;position:relative;}
+  .manual h4{margin:0 0 8px;color:var(--accent);display:flex;align-items:center;gap:10px;font-family:var(--serif);}
+  .manual p{margin:0;white-space:pre-wrap;font-family:var(--serif);line-height:1.8;}
+  .manual .ribbon{position:absolute;top:-9px;left:18px;background:var(--accent);color:#fff8ee;font-size:12px;padding:2px 10px;border-radius:10px;font-family:var(--sans);}
+  .chat-bubble{background:var(--paper-light);border:1px solid var(--rule);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-family:var(--serif);font-size:13.5px;line-height:1.7;}
+  .chat-bubble.mentor{border-left:3px solid var(--accent);}
+  .chat-bubble.me{background:var(--paper);border:1px solid var(--paper-edge);border-radius:8px 8px 2px 8px;text-align:right;color:var(--ink-soft);}
+  .chat-bubble .who{font-size:11px;color:var(--accent);margin-bottom:3px;font-family:var(--sans);}
+  .note-line{font-family:var(--sans);font-size:12.5px;color:var(--ink-soft);border-bottom:1px dotted var(--paper-edge);padding:8px 2px;}
+  #toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:#fff8ee;
+    padding:10px 18px;border-radius:22px;font-size:13px;z-index:80;transition:.25s;pointer-events:none;font-family:var(--sans);box-shadow:0 8px 24px rgba(0,0,0,.25);}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .hint{color:var(--ink-soft);font-size:12px;margin-top:6px;font-family:var(--sans);}
+  .addrow{display:flex;gap:8px;margin-top:8px;}
+  .addrow input{flex:1;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:#fffdf8;font-family:var(--serif);font-size:14px;}
+  .nav-pulse{animation:pulse 1.1s ease 2;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(122,77,43,.45);}50%{box-shadow:0 0 0 9px rgba(122,77,43,0);}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="menu">☰</span>
+    <span class="crumbs">全书 · <b>第六章</b> · 喜欢的事（热情）</span>
+    <span class="title">如何找到想做的事 · 原型</span>
+  </div>
+
+  <div class="reader three-col">
+
+    <!-- Left: step-nav -->
+    <nav class="step-nav">
+      <div class="nav-title">本章步骤（2 步级联）</div>
+      <div class="item active" data-step="1" onclick="switchStep(1)">
+        <span class="dot"><span>1</span></span>
+        <span class="txt"><span class="t1">回答 5 问，找线索</span><span class="t2">5 个长文作答</span></span>
+      </div>
+      <div class="item" data-step="2" onclick="switchStep(2)">
+        <span class="dot"><span>2</span></span>
+        <span class="txt"><span class="t1">整理喜欢的事清单</span><span class="t2">领域×方面＋关联擅长</span></span>
+      </div>
+      <p class="hint">导师（刘老师）贯穿全程，开场回响你第五章的《使用说明书》擅长之事。步骤交互在右侧「步骤」面板。</p>
+    </nav>
+
+    <!-- Center: chapter-content (书籍原文) -->
+    <article class="chapter-content">
+      <p class="book-title">《如何找到想做的事》</p>
+      <h1>找到喜欢的事，和努力说再见</h1>
+      <p class="chap-sub">第六章 · 喜欢的事（热情）= 因为兴趣而投入</p>
+
+      <span class="lead-chip">喜欢的事 = 即使没有报酬也会不由自主去做、不去想「能不能」就先投入的事。</span>
+
+      <p>想要找到「想做的事」，除了擅长的事，还需要找到「喜欢的事」。擅长的事是「无意识的习惯」，而喜欢的事是「因为感兴趣而投入」——两者的区别在于动机：擅长来自习惯，喜欢来自内在兴趣。</p>
+
+      <h2>喜欢的事与擅长的事，区别在哪？</h2>
+      <p>擅长的事往往自己觉察不到（它是无意识的）；喜欢的事则是你会主动投入、甚至忘记时间的事。把两者结合，才能找到真正「想做的事」。但喜欢的事有一个陷阱——</p>
+
+      <div class="quote"><b>POINT · 合理性陷阱</b><br>我们常把「因为有用所以喜欢」误当成「因为兴趣所以喜欢」。例如「我喜欢编程，因为它是高薪技能」——这其实是「有用性驱动的喜欢」，一旦不再有用，兴趣就会消失。真正的内在兴趣，是「即使没有回报也想做」。</div>
+
+      <div class="quote"><b>达·芬奇</b><br>“对学习感到热爱，会让人持续专注到忘记时间。”——能让你忘记时间的，往往就是真正喜欢的事。</div>
+
+      <h2>如何找到喜欢的事</h2>
+      <ul class="def-list">
+        <li><b>列出 100 个喜欢的事物</b>：不限大小，从动物、植物到电影类型，广撒网才能发现自己都没意识到的兴趣。</li>
+        <li><b>回答 30 个问题</b>：从童年游戏、爱读的书的类型、常搜索的关键词里，挖出「不被外界影响、完全按自己想法在做」的事。</li>
+        <li><b>区分「因为有用」和「因为喜欢」</b>：对每个候选，问自己「如果它毫无用处，我还喜欢吗？」</li>
+      </ul>
+
+      <div style="border:1px dashed var(--accent-soft);border-radius:10px;padding:14px 16px;background:var(--paper-light);margin:0 0 14px;">
+        <div style="font-size:13px;color:var(--accent);font-weight:600;font-family:var(--sans);margin-bottom:8px;">图 6-1 · 喜欢的事 = 领域 ∩ 方面 ∩ 擅长（原型占位）</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;font-family:var(--sans);font-size:12px;color:var(--ink-soft);">
+          <span style="padding:4px 10px;border-radius:8px;background:#fff;border:1px solid var(--rule);">领域（如：动物）</span>
+          <span style="color:var(--accent);">×</span>
+          <span style="padding:4px 10px;border-radius:8px;background:#fff;border:1px solid var(--rule);">喜欢的方面（观察羽色…）</span>
+          <span style="color:var(--accent);">×</span>
+          <span style="padding:4px 10px;border-radius:8px;background:#fff;border:1px solid var(--rule);">关联擅长（在混乱中找结构）</span>
+        </div>
+        <div style="font-size:11px;color:var(--ink-faint);margin-top:8px;font-family:var(--sans);">（正式前端请在此渲染可交互的三圆维恩图；此处为静态占位，详见 PRD §4.1。）</div>
+      </div>
+
+      <div id="stepFocus">
+        <span class="sf-title">当前步骤 · 第 1 步：回答 5 问，找线索</span>
+        本步你做：回答 5 个书中问题（愿花钱学的事 / 书架类型 / 拯救过你的领域 / 想道谢的工作 / 让你愤怒的社会事），教练只映照、不替你定性，归纳初步「喜欢的事」领域。第 2 步再拆成「领域 × 喜欢的方面」并关联第 5 章擅长之事。
+      </div>
+    </article>
+
+    <!-- Right: side-panel -->
+    <aside class="side-panel">
+      <div class="side-tabs">
+        <div class="st" data-tab="summary">摘要</div>
+        <div class="st" data-tab="chat">对话</div>
+        <div class="st active" data-tab="steps">步骤</div>
+        <div class="st" data-tab="notes">笔记</div>
+      </div>
+
+      <!-- 摘要 -->
+      <div class="side-pane" data-pane="summary">
+        <div class="pane-empty">本章进行中。<br>完成后这里会显示：你的《喜欢的事清单》（领域 × 方面，并关联第 5 章擅长之事）与《使用说明书》——它们会作为种子被第 7 章（组合）和第 8 章（实践）引用。</div>
+      </div>
+
+      <!-- 对话 -->
+      <div class="side-pane" data-pane="chat">
+        <div class="chat-bubble mentor"><div class="who">刘老师（导师）</div>
+          你第五章写了《使用说明书》：擅长「在混乱里帮人理出结构、让人安心」。现在第六章我们找你「因为兴趣所以喜欢」的事——你做什么会不由自主想知道、不做就难受？小心别把「因为有用所以喜欢」误当成真兴趣。
+        </div>
+        <div class="chat-bubble me">我好像分不清「喜欢」和「觉得有用」……</div>
+        <div class="chat-bubble mentor"><div class="who">刘老师</div>
+          很常见。我们从 Q1「你愿意花钱学的事」挖起：那件事如果毫无用处，你还想学吗？会的话，就是真兴趣。
+        </div>
+        <p class="hint">（对话为静态原型；正式前端接入导师服务后实现多轮输入。）</p>
+      </div>
+
+      <!-- 步骤 -->
+      <div class="side-pane active" data-pane="steps">
+        <div class="step-card">
+          <div class="step-head">
+            <div class="step-head-row">
+              <div class="step-head-left">
+                <span class="step-num" id="stepNum">①</span>
+                <span class="step-title-text" id="stepCardTitle">回答 5 问，找线索</span>
+              </div>
+              <div class="step-head-right">
+                <span class="role-chip" id="roleChip" title="题目指定角色，运行时不可改">心理咨询师 <span>🔒</span></span>
+                <button class="step-guide-btn" id="stepGuideBtn" aria-label="操作提示" aria-expanded="false" onclick="toggleGuide()">?</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-guide-popover" id="stepGuidePopover" hidden>
+            <strong>操作提示</strong>
+            <ol>
+              <li><b>step-1 回答 5 问</b>：逐题长文作答；教练只映照、不替你定性，归纳初步「喜欢的事」领域（素材不足不强凑）。</li>
+              <li><b>step-2 整理清单</b>：把领域拆成「领域 × 喜欢的方面」，可关联第 5 章擅长之事；识别「因为有用所以喜欢」的合理性陷阱。</li>
+              <li><b>引用 100 例 / 30 问</b>：抽屉里查清单，点「引用」直接加入喜欢的事清单（标记来源）；不并入其他列表。</li>
+              <li><b>锁定</b>：单项锁仅影响重新生成（保留原位置）；整步提交后不可编辑（如需改，新建一次练习）。</li>
+            </ol>
+          </div>
+
+          <!-- 2 步级联选择器（镜像左栏） -->
+          <div class="step-strip" id="stepStrip" role="tablist" aria-label="2 步级联">
+            <button class="strip-item active" data-target="1" role="tab" aria-selected="true" onclick="switchStep(1)"><span class="dot">1</span><span class="lbl">5问</span></button>
+            <span class="strip-line"></span>
+            <button class="strip-item" data-target="2" role="tab" aria-selected="false" onclick="switchStep(2)"><span class="dot">2</span><span class="lbl">清单</span></button>
+          </div>
+
+          <!-- step body -->
+          <div class="step-body">
+            <!-- STEP 1 -->
+            <div id="sb1">
+              <div class="counter" id="c1"><span id="c1label">已作答</span> <b id="c1n">0</b> / <span id="c1den">5 问</span></div>
+              <div id="qcards"></div>
+              <div class="row" id="moreEntry" style="margin:4px 0 12px;">
+                <button class="btn sm ghost" onclick="openPassion()">查「喜欢的事 100 例」</button>
+                <button class="btn sm warn" onclick="openThirty()">去回答 30 问</button>
+              </div>
+              <div class="row">
+                <button class="btn sm ghost" onclick="saveAllDraft()">保存全部草稿</button>
+                <button class="btn" onclick="runStep1()">运行教练映照</button>
+                <button class="btn primary" id="sb1Submit" onclick="submitStep1()" disabled>提交本步</button>
+              </div>
+              <div id="step1out"></div>
+            </div>
+
+            <!-- STEP 2 -->
+            <div id="sb2" style="display:none;">
+              <div class="counter" id="c2">已收集 <b id="c2n">0</b> 个喜欢的事</div>
+              <div class="trap">
+                <b>合理性陷阱</b>：对每个喜欢的事，问自己「如果它毫无用处，我还喜欢吗？」——只因「有用 / 高薪 / 被认可」而喜欢的，不算真兴趣，请标记来源为「自我（有用驱动）」并谨慎纳入第七章组合。
+              </div>
+              <div id="likeList"></div>
+              <div class="refnote" id="refNote"></div>
+              <div class="addrow">
+                <input id="newLike" placeholder="新增喜欢的事领域，例如「观鸟」…" />
+                <button class="btn sm" onclick="addLikeField()">＋ 添加</button>
+              </div>
+              <div class="row" style="margin-top:12px;">
+                <button class="btn sm ghost" onclick="openPassion()">查 100 例清单（引用加入）</button>
+                <button class="btn sm ghost" onclick="openThirty()">去回答 30 问（引用加入）</button>
+                <button class="btn sm" onclick="runStep2()">让教练汇总并关联擅长</button>
+                <button class="btn sm ghost" onclick="regen()">重新生成（保留锁定项）</button>
+                <button class="btn sm primary" id="sb2Submit" onclick="submitStep2()" disabled>提交本步</button>
+              </div>
+              <div class="manual" id="manualCard" style="display:none;">
+                <span class="ribbon">喜欢的事清单</span>
+                <h4>我的使用说明书（概述）
+                  <button class="btn sm ghost right" onclick="exportManual()">导出</button>
+                </h4>
+                <p id="manualText"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 笔记 -->
+      <div class="side-pane" data-pane="notes">
+        <div class="note-line">喜欢的事 = 因为兴趣而投入；擅长的事 = 无意识的习惯。</div>
+        <div class="note-line">两者结合才是「想做的事」。</div>
+        <div class="note-line">合理性陷阱：别把「因为有用所以喜欢」当成真兴趣。</div>
+        <div class="note-line">列 100 例、答 30 问，广撒网才能发现自己没意识到的兴趣。</div>
+        <div class="note-line">真兴趣：即使毫无用处，也还想做。</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="drawer-mask" id="mask" onclick="closeDrawer()"></div>
+  <div class="drawer" id="drawer">
+    <header>
+      <h3 id="drawerTitle">喜欢的事 · 100 例清单</h3>
+      <span class="x" onclick="closeDrawer()">✕</span>
+    </header>
+    <div class="xtabs" id="drawerTabs">
+      <button data-mode="passion" class="active" onclick="setDrawerMode('passion')">100 例</button>
+      <button data-mode="thirty" onclick="setDrawerMode('thirty')">30 问</button>
+      <button data-mode="talents" onclick="setDrawerMode('talents')">关联擅长</button>
+    </div>
+    <div class="search"><input id="exSearch" placeholder="搜索…" oninput="renderDrawer()" /></div>
+    <div class="list" id="exList"></div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+const QUESTIONS = [{"name": "q1", "label": "你现在有即使花钱也想学习的事情吗？", "hint": ""}, {"name": "q2", "label": "在你的书架上摆放着什么类型的书？", "hint": ""}, {"name": "q3", "label": "有没有遇到过让你产生『真是太好了！』『它拯救了我！』这种感觉的领域或者事物？", "hint": ""}, {"name": "q4", "label": "在迄今为止的生活中，你『想道谢的工作』是什么？", "hint": ""}, {"name": "q5", "label": "迄今为止你会对社会中的什么事情感到愤怒？", "hint": ""}];
+const PASSION_EXAMPLES = [{"id": "p01", "text": "动物"}, {"id": "p02", "text": "花"}, {"id": "p03", "text": "农业"}, {"id": "p04", "text": "林业"}, {"id": "p05", "text": "宇宙"}, {"id": "p06", "text": "自然环境"}, {"id": "p07", "text": "机器人"}, {"id": "p08", "text": "IT"}, {"id": "p09", "text": "电脑"}, {"id": "p10", "text": "艺术"}, {"id": "p11", "text": "摄影"}, {"id": "p12", "text": "商品设计"}, {"id": "p13", "text": "平面设计"}, {"id": "p14", "text": "音乐"}, {"id": "p15", "text": "诗歌"}, {"id": "p16", "text": "乐器"}, {"id": "p17", "text": "文娱活动"}, {"id": "p18", "text": "表演"}, {"id": "p19", "text": "电影"}, {"id": "p20", "text": "电视"}, {"id": "p21", "text": "书"}, {"id": "p22", "text": "杂志"}, {"id": "p23", "text": "报纸"}, {"id": "p24", "text": "游戏"}, {"id": "p25", "text": "动画"}, {"id": "p26", "text": "漫画"}, {"id": "p27", "text": "运动"}, {"id": "p28", "text": "综合格斗"}, {"id": "p29", "text": "锻炼"}, {"id": "p30", "text": "户外"}, {"id": "p31", "text": "旅行"}, {"id": "p32", "text": "观光"}, {"id": "p33", "text": "主题公园"}, {"id": "p34", "text": "旅馆"}, {"id": "p35", "text": "婚礼"}, {"id": "p36", "text": "葬礼"}, {"id": "p37", "text": "汽车"}, {"id": "p38", "text": "飞机"}, {"id": "p39", "text": "自行车"}, {"id": "p40", "text": "船"}, {"id": "p41", "text": "火车"}, {"id": "p42", "text": "时尚"}, {"id": "p43", "text": "美容"}, {"id": "p44", "text": "放松"}, {"id": "p45", "text": "烹饪"}, {"id": "p46", "text": "点心"}, {"id": "p47", "text": "营养"}, {"id": "p48", "text": "酒"}, {"id": "p49", "text": "建筑"}, {"id": "p50", "text": "土木工程"}, {"id": "p51", "text": "室内装饰"}, {"id": "p52", "text": "医疗技术"}, {"id": "p53", "text": "康复"}, {"id": "p54", "text": "药"}, {"id": "p55", "text": "社会福利"}, {"id": "p56", "text": "学校教育"}, {"id": "p57", "text": "保育"}, {"id": "p58", "text": "政治"}, {"id": "p59", "text": "法律"}, {"id": "p60", "text": "语言学"}, {"id": "p61", "text": "国际"}, {"id": "p62", "text": "金融"}, {"id": "p63", "text": "商务"}, {"id": "p64", "text": "职业规划（就职和跳槽）"}, {"id": "p65", "text": "经营"}, {"id": "p66", "text": "不动产"}, {"id": "p67", "text": "性"}, {"id": "p68", "text": "电机"}, {"id": "p69", "text": "文具"}, {"id": "p70", "text": "心理"}, {"id": "p71", "text": "演艺"}, {"id": "p72", "text": "休闲"}, {"id": "p73", "text": "宣传"}, {"id": "p74", "text": "市场营销"}, {"id": "p75", "text": "化学"}, {"id": "p76", "text": "玩具"}, {"id": "p77", "text": "食品"}, {"id": "p78", "text": "电力"}, {"id": "p79", "text": "视频"}, {"id": "p80", "text": "经济"}, {"id": "p81", "text": "哲学"}, {"id": "p82", "text": "家庭"}, {"id": "p83", "text": "烟草"}, {"id": "p84", "text": "咨询"}, {"id": "p85", "text": "运输"}, {"id": "p86", "text": "宗教"}, {"id": "p87", "text": "文艺"}, {"id": "p88", "text": "办公"}, {"id": "p89", "text": "治安"}, {"id": "p90", "text": "护理"}, {"id": "p91", "text": "医疗"}, {"id": "p92", "text": "医疗辅助"}, {"id": "p93", "text": "恋爱"}, {"id": "p94", "text": "结婚"}, {"id": "p95", "text": "日常生活"}, {"id": "p96", "text": "饮食"}, {"id": "p97", "text": "行政"}, {"id": "p98", "text": "服务业"}, {"id": "p99", "text": "物流"}, {"id": "p100", "text": "营业、销售"}];
+const THIRTY_QUESTIONS = ["不需要考虑工作、金钱之类的条件时，你喜欢什么？", "有让你感到兴奋的话题，或让你感到热血的东西吗？", "你做什么事情时会感到幸福？", "如果不用担心金钱的问题，而且什么都能成为工作的话，你想做什么样的工作？（请暂时把“能不能”这样的判断从大脑中去掉再回答。）", "如果做任何工作都一定能被周围的人尊敬，你想从事什么工作呢？", "迄今为止学过的东西中，什么是你觉得有趣的？", "你会学习些什么内容呢？", "当你还是小学生（中学生）时，曾经梦想长大后从事的工作是什么？", "小学时，你沉迷的游戏是什么？（那些不被人影响而完全按照自己想法做的事，就是你单纯喜欢的事。）", "现在你有什么新的想做的事吗？", "迄今为止读过的所有书中，你最喜欢的是哪本？", "有哪些烦恼是你已经克服了的？或者有什么问题是你今后想解决的？", "当今社会，什么是你觉得有问题的？", "迄今为止，你在什么地方比其他人花费的时间更多？", "你喜欢和家人、朋友聊什么？"];
+const SEED_TALENTS = ["共情式梳理", "带动气氛", "在混乱中找结构", "把复杂讲简单", "让人安心"];
+const STEP1_LIKES = ['动物','花','读书','整理收纳','和人深聊'];
+
+
+let likes = [];   // {field, aspects:[], linked_strengths:[], sources:[], locked}
+let currentStep = 1, step1Done=false, step2Done=false;
+const drafts = {};
+
+/* ── step 切换（右栏 strip + 左栏 nav + 中栏 focus 联动） ── */
+function switchStep(n){
+  currentStep=n;
+  document.querySelectorAll('#stepStrip .strip-item').forEach(b=>{
+    const on=(+b.dataset.target===n); b.classList.toggle('active',on); b.setAttribute('aria-selected',on?'true':'false');
+  });
+  document.querySelectorAll('.step-nav .item').forEach(it=>it.classList.toggle('active',(+it.dataset.step===n)));
+  document.getElementById('sb1').style.display=(n===1)?'block':'none';
+  document.getElementById('sb2').style.display=(n===2)?'block':'none';
+  document.getElementById('stepNum').textContent=(n===1)?'①':'②';
+  document.getElementById('stepCardTitle').textContent=(n===1)?'回答 5 问，找线索':'整理喜欢的事清单';
+  const rc=document.getElementById('roleChip');
+  if(rc){ rc.innerHTML=(n===1)?'心理咨询师 <span>🔒</span>':'职业规划师 <span>🔒</span>'; }
+  const focus=document.getElementById('stepFocus');
+  if(n===1){
+    focus.querySelector('.sf-title').textContent='当前步骤 · 第 1 步：回答 5 问，找线索';
+    focus.lastChild.textContent='本步你做：回答 5 个书中问题（愿花钱学的事 / 书架类型 / 拯救过你的领域 / 想道谢的工作 / 让你愤怒的社会事），教练只映照、不替你定性，归纳初步「喜欢的事」领域。第 2 步再拆成「领域 × 喜欢的方面」并关联第 5 章擅长之事。';
+  } else {
+    focus.querySelector('.sf-title').textContent='当前步骤 · 第 2 步：整理喜欢的事清单';
+    focus.lastChild.textContent='本步你做：把第 1 步的领域拆成「领域 × 喜欢的方面」，可关联第 5 章擅长之事（点卡片「＋关联擅长」），识别「因为有用所以喜欢」的合理性陷阱。LLM 不替你定性、只建议关联。';
+  }
+}
+function toggleGuide(){
+  const p=document.getElementById('stepGuidePopover'); const b=document.getElementById('stepGuideBtn');
+  const open=p.hasAttribute('hidden');
+  if(open){p.removeAttribute('hidden');b.setAttribute('aria-expanded','true');} else {p.setAttribute('hidden','');b.setAttribute('aria-expanded','false');}
+}
+function renderQuestions(){
+  document.getElementById('qcards').innerHTML = QUESTIONS.map((q,i)=>`
+    <div class="qcard">
+      <div class="q">Q${i+1}. ${q.label}<small>${q.hint||''}</small></div>
+      <textarea data-q="${q.name}" placeholder="在这里写下你的答案…" oninput="clearErr(this)"></textarea>
+      <div class="row" style="margin-top:6px;">
+        <button class="btn sm ghost" onclick="saveQ(${i})">保存此题草稿</button>
+        <span class="hint" id="draft-${i}"></span>
+      </div>
+    </div>`).join('');
+}
+function clearErr(t){ t.style.borderColor=''; }
+function countFilled(){return [...document.querySelectorAll('#qcards textarea')].filter(t=>t.value.trim()).length;}
+function saveQ(i){ drafts[i]=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}); document.getElementById('draft-'+i).textContent='已存 '+drafts[i]; updateCounters(); }
+function saveAllDraft(){ QUESTIONS.forEach((_,i)=>saveQ(i)); toast('全部 5 题草稿已保存'); }
+
+function runStep1(){
+  const ta=[...document.querySelectorAll('#qcards textarea')];
+  const missing=ta.map((t,i)=>({t,i})).filter(o=>!o.t.value.trim());
+  if(missing.length>0){ missing.forEach(o=>o.t.style.borderColor='#c0392b'); toast('请先回答全部 5 个问题（还差 '+missing.length+' 题）'); return; }
+  likes = STEP1_LIKES.map(f=>({field:f, aspects:[], linked_strengths:[], sources:['self'], locked:false}));
+  document.getElementById('step1out').innerHTML = `
+    <div class="outbox">
+      <h4>教练的映照（草稿，可审阅后提交）</h4>
+      <p>你 Q1 提到「愿意花钱学观鸟和插花」、Q3 说「动物纪录片拯救了我低落的时候」——你的兴趣明显偏向「自然生命」与「亲手整理秩序」。下面是初步「喜欢的事」领域，第 2 步你把它们拆成具体方面、并关联擅长之事。</p>
+      <h4 style="margin-top:12px;">初步领域（先攒到 10 个）</h4>
+      <div>${likes.map(t=>`<span class="talent-chip">${t.field}</span>`).join('')}</div>
+    </div>`;
+  document.getElementById('sb1Submit').disabled=false;
+  updateCounters();
+  toast('已运行教练映照，归纳 '+likes.length+' 个初步领域（草稿）。审阅后可提交本步。');
+}
+function submitStep1(){
+  if(!likes.length){ toast('请先运行教练映照'); return; }
+  step1Done=true;
+  document.querySelector('.step-nav .item[data-step="1"]').classList.add('submitted');
+  document.querySelector('#stepStrip .strip-item[data-target="1"]').classList.add('done');
+  const n2=document.querySelector('.step-nav .item[data-step="2"]'); n2.classList.add('nav-pulse'); setTimeout(()=>n2.classList.remove('nav-pulse'),1700);
+  toast('Step 1 已提交（'+likes.length+' 个初步领域可供 Step 2 引用）');
+}
+
+function renderLikes(){
+  const box=document.getElementById('likeList');
+  box.innerHTML = likes.map((t,i)=>`
+    <div class="trow ${t.locked?'locked':''}" data-i="${i}">
+      <div class="tmain">
+        <span class="tname">${(t.sources||[]).map(s=>`<span class="tag">${s==='100_examples'?'引自100例':s==='30_questions'?'引自30问':'自我'}</span>`).join('')}${t.field}</span>
+        <button class="lock" title="锁定" onclick="toggleLock(${i})">${t.locked?'🔒':'🔓'}</button>
+        <button class="del" title="删除" onclick="delLike(${i})">🗑</button>
+      </div>
+      <div class="aspects">
+        <span style="font-size:12px;color:var(--ink-soft);">喜欢的方面：</span>
+        <input value="${(t.aspects||[]).join('、')}" placeholder="用「、」分隔，如 观察羽色、记录叫声" oninput="updateAspects(${i},this.value)" ${t.locked?'disabled':''}/>
+      </div>
+      <div class="linked">
+        <span style="font-size:12px;color:var(--ink-soft);">关联第5章擅长：</span>
+        ${(t.linked_strengths||[]).map(l=>`<span class="lk">${l}</span>`).join('')}
+        <span class="lk add" onclick="openTalents(${i})">＋ 关联擅长</span>
+      </div>
+    </div>`).join('') || '<p class="hint">还没有喜欢的事，去查 100 例 / 30 问清单引用，或手动新增。</p>';
+  const refN=likes.filter(t=>(t.sources||[]).includes('100_examples')||(t.sources||[]).includes('30_questions')).length;
+  document.getElementById('refNote').textContent = refN? (refN+' 项引自 100 例 / 30 问清单（已标来源）；其余为 5 问衍生。') : '全部为 5 问衍生长处（无清单引用）。';
+  updateCounters();
+}
+function updateAspects(i,val){ likes[i].aspects = val.split('、').map(s=>s.trim()).filter(Boolean); }
+function toggleLock(i){ likes[i].locked=!likes[i].locked; renderLikes(); toast(likes[i].locked?'已锁定：重新生成将保留':'已解锁'); }
+function delLike(i){ if(likes[i].locked){toast('已锁定，不能删除');return;} likes.splice(i,1); renderLikes(); }
+function addLikeField(){
+  const el=document.getElementById('newLike'); const t=(el.value||'').trim(); if(!t){toast('请输入领域');return;}
+  if(likes.some(l=>l.field===t)){toast('该领域已存在');return;}
+  likes.push({field:t, aspects:[], linked_strengths:[], sources:['self'], locked:false}); el.value=''; renderLikes();
+}
+function addLikeFrom(text,source){
+  const sLabel = source==='100_examples'?'100_examples':source==='30_questions'?'30_questions':'self';
+  if(likes.some(l=>l.field===text)){toast('该领域已在清单中');return;}
+  likes.push({field:text, aspects:[], linked_strengths:[], sources:[sLabel], locked:false});
+  renderLikes(); closeDrawer();
+  toast('已加入「'+text+'」（来源：'+(sLabel==='self'?'自我':'引自'+(sLabel==='100_examples'?'100例':'30问'))+'）');
+}
+function linkTalent(i,t){
+  if(likes[i].locked){toast('已锁定，先解锁');return;}
+  if((likes[i].linked_strengths||[]).includes(t)){toast('已关联该项擅长');return;}
+  likes[i].linked_strengths = likes[i].linked_strengths||[]; likes[i].linked_strengths.push(t);
+  renderLikes(); closeDrawer(); toast('已关联擅长：「'+t+'」');
+}
+
+function runStep2(){
+  if(!likes.length){ toast('请先完成 Step 1'); return; }
+  const sug={ '动物':['观察生命节律','照顾与被照顾'], '花':['分辨品种','插花造型'], '读书':['沉浸长文本','提炼观点'],
+    '整理收纳':['建立秩序','断舍离'], '和人深聊':['接住情绪','挖出深层需求'] };
+  const mapTal={ '动物':'在混乱中找结构', '花':'把复杂讲简单', '读书':'把复杂讲简单', '整理收纳':'在混乱中找结构', '和人深聊':'共情式梳理' };
+  likes.forEach(t=>{
+    if(t.locked) return;
+    if(!t.aspects.length && sug[t.field]) t.aspects = sug[t.field];
+    if(!t.linked_strengths.length && mapTal[t.field] && SEED_TALENTS.includes(mapTal[t.field]))
+      t.linked_strengths = [mapTal[t.field]];
+  });
+  renderLikes();
+  document.getElementById('manualCard').style.display='block';
+  document.getElementById('manualText').textContent =
+    "我的喜欢的事清单（草稿）：\n· 动物 —— 喜欢的方面：观察生命节律、照顾与被照顾；关联擅长：在混乱中找结构\n· 花 —— 喜欢的方面：分辨品种、插花造型；关联擅长：把复杂讲简单\n· 读书 —— 喜欢的方面：沉浸长文本、提炼观点；关联擅长：把复杂讲简单\n· 整理收纳 —— 喜欢的方面：建立秩序、断舍离；关联擅长：在混乱中找结构\n· 和人深聊 —— 喜欢的方面：接住情绪、挖出深层需求；关联擅长：共情式梳理\n\n（以上若只因「有用」而喜欢，请谨慎纳入第七章组合。）";
+  document.getElementById('sb2Submit').disabled=false;
+  toast('已汇总领域、建议「方面＋关联擅长」，并生成《喜欢的事清单》（草稿，可编辑/锁定后提交）');
+}
+function submitStep2(){
+  if(!likes.length){ toast('请先运行教练整理'); return; }
+  step2Done=true;
+  document.querySelector('.step-nav .item[data-step="2"]').classList.add('submitted');
+  document.querySelector('#stepStrip .strip-item[data-target="2"]').classList.add('done');
+  toast('Step 2 已提交（《喜欢的事清单》与《使用说明书》已归档；未细拆项保留为空）');
+}
+function regen(){
+  const lockedCount=likes.filter(t=>t.locked).length;
+  const unlocked=likes.filter(t=>!t.locked);
+  for(let i=unlocked.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[unlocked[i],unlocked[j]]=[unlocked[j],unlocked[i]];}
+  const result=new Array(likes.length); let u=0;
+  for(let i=0;i<likes.length;i++){ result[i]=likes[i].locked?likes[i]:unlocked[u++]; }
+  likes=result; renderLikes();
+  if(lockedCount===likes.length){ toast('全部已锁定，无项可重排'); }
+  else { toast(`已按 ${lockedCount} 个锁定项保留原位置，其余 ${unlocked.length} 项重新洗牌`); }
+}
+function exportManual(){
+  const txt=document.getElementById('manualText').textContent;
+  const blob=new Blob([txt],{type:'text/markdown;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='我的喜欢的事清单.md'; a.click();
+  toast('已导出《喜欢的事清单》');
+}
+
+/* ── drawer（100例 / 30问 / 关联擅长 三模式） ── */
+let drawerMode='passion', talentTargetIdx=null;
+function openPassion(){ drawerMode='passion'; syncDrawerTabs(); document.getElementById('drawerTitle').textContent='喜欢的事 · 100 例清单'; document.getElementById('exSearch').placeholder='搜索示例领域…'; openDrawer(); }
+function openThirty(){ drawerMode='thirty'; syncDrawerTabs(); document.getElementById('drawerTitle').textContent='找到喜欢的事 · 30 问'; document.getElementById('exSearch').placeholder='搜索问题…'; openDrawer(); }
+function openTalents(i){ drawerMode='talents'; talentTargetIdx=i; syncDrawerTabs(); document.getElementById('drawerTitle').textContent='关联第 5 章擅长之事'; document.getElementById('exSearch').placeholder='搜索擅长…'; openDrawer(); }
+function setDrawerMode(m){ drawerMode=m; syncDrawerTabs();
+  if(m==='passion'){document.getElementById('drawerTitle').textContent='喜欢的事 · 100 例清单';document.getElementById('exSearch').placeholder='搜索示例领域…';}
+  if(m==='thirty'){document.getElementById('drawerTitle').textContent='找到喜欢的事 · 30 问';document.getElementById('exSearch').placeholder='搜索问题…';}
+  if(m==='talents'){document.getElementById('drawerTitle').textContent='关联第 5 章擅长之事';document.getElementById('exSearch').placeholder='搜索擅长…';}
+  renderDrawer();
+}
+function syncDrawerTabs(){ document.querySelectorAll('#drawerTabs button').forEach(b=>b.classList.toggle('active',b.dataset.mode===drawerMode)); }
+function openDrawer(){ document.getElementById('mask').classList.add('show'); document.getElementById('drawer').classList.add('show'); renderDrawer(); }
+function closeDrawer(){ document.getElementById('mask').classList.remove('show'); document.getElementById('drawer').classList.remove('show'); }
+function renderDrawer(){
+  const kw=(document.getElementById('exSearch').value||'').trim();
+  const list=document.getElementById('exList');
+  if(drawerMode==='passion'){
+    const arr=PASSION_EXAMPLES.map((e,i)=>({e,i})).filter(o=>o.e.text.includes(kw));
+    list.innerHTML = arr.length? arr.map(o=>`
+      <div class="ex"><span class="et">${o.e.text}</span><button class="btn sm ghost" onclick="addLikeFrom('${o.e.text.replace(/'/g,"\\'")}','100_examples')">引用</button></div>`).join('')
+      : '<p class="hint">没有匹配的示例。</p>';
+  } else if(drawerMode==='thirty'){
+    const arr=THIRTY_QUESTIONS.map((t,i)=>({t,i})).filter(o=>o.t.includes(kw));
+    list.innerHTML = arr.length? arr.map(o=>`
+      <div class="ex"><span class="et">${o.t}</span><button class="btn sm ghost" onclick="toast('请在右侧步骤面板作答后由教练归纳；此问仅作思路触发')">思路</button></div>`).join('')
+      : '<p class="hint">没有匹配的问题。</p>';
+  } else {
+    const arr=SEED_TALENTS.filter(t=>t.includes(kw));
+    list.innerHTML = arr.length? arr.map(t=>`
+      <div class="ex"><span class="et">${t}</span><button class="btn sm ghost" onclick="linkTalent(${talentTargetIdx},'${t}')">关联</button></div>`).join('')
+      : '<p class="hint">没有匹配的擅长。</p>';
+  }
+}
+
+/* ── helpers ── */
+function updateCounters(){
+  const answered=countFilled();
+  const n=likes.length;
+  if(!step1Done){
+    document.getElementById('c1label').textContent='已作答';
+    document.getElementById('c1den').textContent='5 问';
+    document.getElementById('c1n').textContent=answered;
+    document.getElementById('c1').classList.toggle('warn', answered<5);
+  } else {
+    document.getElementById('c1label').textContent='已收集';
+    document.getElementById('c1den').textContent='10 个领域';
+    document.getElementById('c1n').textContent=n;
+  }
+  document.getElementById('c2n').textContent=n;
+  document.getElementById('c2').classList.toggle('warn', n<10);
+}
+function switchTab(id){
+  document.querySelectorAll('.side-tabs .st').forEach(t=>t.classList.toggle('active', t.dataset.tab===id));
+  document.querySelectorAll('.side-pane').forEach(p=>p.classList.toggle('active', p.dataset.pane===id));
+}
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),1900);
+}
+
+document.querySelectorAll('.side-tabs .st').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+renderQuestions();
+renderLikes();
+updateCounters();
+</script>
+</body>
+</html>
