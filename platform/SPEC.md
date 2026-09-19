@@ -193,8 +193,8 @@ POST   /api/chapters/{cid}/steps/{sid}/submit
 ### 端口与项目布局
 
 - 前端为单文件 `frontend/index.html`（无独立端口），后端 `:8011`（避开 ai-agent-book 的 3010/8010）；前端 API base 当前硬编码 `http://localhost:8011`，M3 改为 `location.origin` 或后端 `StaticFiles` 挂载到 `:8011/`
-- 项目根：`D:\AI_Project\What_Want\platform\`
-- 复用：`D:\AI_Project\ai-agent-book\site\apps\backend\app\security\providers.py` (LLM provider + 加密)
+- 项目根：`platform/`（本仓库根目录下的 `platform/`）
+- 复用：ai-agent-book 项目的 `app/security/providers.py`（LLM provider + 加密），已复制进本仓库 `app/security/providers.py`
 
 ### 复用策略
 
@@ -263,7 +263,7 @@ API + DB 为主要 seam。前端组件不写单元测试（用 prototype HTML �
 # Phase A2 + C（2026-08）设计
 
 > 本节是 mockup-v4 验收 + 3 子 agent 审阅后的权威设计。ch5-8 需求确认后追加细节。
-> 相关文件：plan `~/.claude/plans/what-want-plan-c-users-deng-claude-plan-cozy-tower.md`、mockup `platform/prototype/mockup-v4.html`、交接 `D:\AI_Project\What_Want\HANDOFF.md`
+> 相关文件：plan `~/.claude/plans/what-want-plan-c-users-deng-claude-plan-cozy-tower.md`、mockup `platform/prototype/mockup-v4.html`（本地原型，不入库）、交接 `HANDOFF.md`（本地交接件，不入库）
 
 ## 设计语言（书卷气）
 

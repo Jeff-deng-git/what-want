@@ -71,3 +71,17 @@ HANDOFF.md
 /fix_html_fig7-2.py
 *.bak-*
 *.revert-*
+
+# ---- 开发期工具（硬编码本地原仓库路径 / 依赖已剥离的书籍原文，克隆用户无需也不该有）----
+# 这些文件仅用于本地开发期校验，已从公开库移除；完整副本保留在本地备份目录 clone_test_dev_only_backup/（不上传）
+platform/backend/tests/
+platform/backend/extract_chapter.py
+platform/backend/extract_styled.py
+platform/backend/python
+platform/backend/scripts/check_config_consistency.py
+platform/backend/scripts/smoke.sh
+platform/backend/scripts/smoke_all_chapters_mock.py
+platform/backend/scripts/smoke_ch01_mock.py
+platform/backend/scripts/seed_agent_configs.py
+platform/backend/scripts/probe_deepseek_chat.ps1
+platform/backend/scripts/migrate_chapter_ids.py
