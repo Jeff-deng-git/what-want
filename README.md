@@ -6,7 +6,37 @@
 
 ---
 
-## 怎么开始（三步）
+## 怎么开始（三种方式，选一种即可）
+
+### 方式 A：用 GitHub Pages 在线看（最简单，只看前 3 章 + 序言）
+
+本项目已经支持直接部署到 **GitHub Pages**，不需要安装 Python、不需要后端，打开网页就能看到内置的前 3 章 + 序言正文。
+
+- 访问地址（GitHub 默认）：`https://jeff-deng-git.github.io/what-want/`
+- 如果你配置了自定义域名（如 `cooldill.githubpage.com`），就用那个域名打开。
+
+**静态页面能做什么**
+- 看完整章节列表（序 + 第 1–8 章 + 问题清单）。
+- 阅读已内置的**前 3 章 + 序言**正文。
+- AI 导师对话、自动摘要、笔记保存、步骤练习等**需要后端大模型的功能会提示未配置**。
+
+**绑定自定义域名**
+1. 仓库里已经放了 `CNAME` 文件，内容是 `cooldill.githubpage.com`。
+2. 进入 GitHub 仓库 → Settings → Pages → Custom domain，填入 `cooldill.githubpage.com`，点 Save。
+3. 等待 DNS 解析生效（通常几分钟到几小时），HTTPS 证书自动签发。
+
+**如果补了更多章节怎么更新页面**
+GitHub Pages 不会自动扫描 `chapter_md/`，需要重新生成静态数据文件：
+
+```
+python tools/build_static_data.py
+```
+
+然后再推送代码即可。
+
+---
+
+### 方式 B：在自己电脑上运行完整版（有 AI 对话 + 步骤练习）
 
 **第一步：装好运行环境**
 - 安装 Python（3.11 或更高版本，去 python.org 下载安装即可）。

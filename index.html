@@ -959,9 +959,71 @@
 
 <script>
 const params = new URLSearchParams(window.location.search);
+const FORCE_STATIC = params.get('static') === '1';
+const IS_GITHUB_PAGES = /(^|\.)github\.io$|cooldill\.githubpage\.com/i.test(location.hostname);
+const USE_STATIC = FORCE_STATIC || IS_GITHUB_PAGES;
 const API = params.get('api') || window.API_BASE || location.origin;
 const chapterId = params.get('chapter');
 const app = document.getElementById('app');
+
+// ---------- STATIC MODE SHIM (GitHub Pages) ----------
+// When deployed to GitHub Pages (or any static host) there is no Python backend.
+// We intercept known API calls and serve the pre-built data/chapters.json instead.
+// Interactive features that require a backend LLM/DB will gracefully degrade.
+if (USE_STATIC) {
+  const originalFetch = window.fetch;
+  let staticDataPromise = null;
+  const jsonResponse = (body, status = 200) => {
+    const text = typeof body === 'string' ? body : JSON.stringify(body);
+    return new Response(text, { status, headers: { 'content-type': 'application/json' } });
+  };
+  const getStaticData = async () => {
+    if (!staticDataPromise) {
+      staticDataPromise = originalFetch('data/chapters.json')
+        .then(r => { if (!r.ok) throw new Error('无法加载静态章节数据'); return r.json(); });
+    }
+    return staticDataPromise;
+  };
+  window.fetch = async function(url, opts = {}) {
+    const urlStr = String(url);
+    if (!urlStr.startsWith(API)) return originalFetch(url, opts);
+    const path = urlStr.slice(API.length) || '/';
+    const data = await getStaticData();
+    if (path === '/api/book/chapters') return jsonResponse(data.chapters);
+    if (path === '/api/book/last-reading') return jsonResponse(null);
+    if (path === '/api/roles') return jsonResponse([]);
+    const metaMatch = path.match(/^\/api\/book\/chapters\/([^/]+)$/);
+    if (metaMatch) {
+      const ch = data.chapters.find(c => c.id === metaMatch[1]);
+      return ch ? jsonResponse({ id: ch.id, title: ch.title, has_steps: false }) : jsonResponse({ detail: '章节不存在' }, 404);
+    }
+    const contentMatch = path.match(/^\/api\/book\/chapters\/([^/]+)\/content$/);
+    if (contentMatch) {
+      const content = data.contents[contentMatch[1]];
+      return content ? jsonResponse(content) : jsonResponse({ detail: 'content not found' }, 404);
+    }
+    const stateMatch = path.match(/^\/api\/book\/chapters\/([^/]+)\/state$/);
+    if (stateMatch) {
+      if (opts.method === 'PUT') return jsonResponse({ ok: true });
+      return jsonResponse({ chapter_id: stateMatch[1], last_step_id: null, scroll_position: 0 });
+    }
+    // Notes: empty list for reads, 503 for writes so the UI shows a graceful message.
+    if (path === '/api/notes' || path.startsWith('/api/notes?')) {
+      if (opts.method === 'POST' || opts.method === 'PUT' || opts.method === 'DELETE') {
+        return jsonResponse({ detail: '静态预览模式：笔记保存需要后端服务' }, 503);
+      }
+      return jsonResponse([]);
+    }
+    if (path.startsWith('/api/notes/')) {
+      return jsonResponse({ detail: '静态预览模式：笔记保存需要后端服务' }, 503);
+    }
+    // Chat / summary / flowchart / step runner need a backend LLM / DB.
+    if (path.startsWith('/api/')) {
+      return jsonResponse({ detail: '静态预览模式：导师对话、摘要与练习需要配置后端大模型' }, 503);
+    }
+    return originalFetch(url, opts);
+  };
+}
 
 async function load(path) {
   return fetchJson(API + path);
