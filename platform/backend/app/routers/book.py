@@ -93,6 +93,43 @@ def _resolve_dir(env_value: str) -> Path:
     return (Path(__file__).parent.parent.parent.parent / p).resolve()
 
 
+# Canonical book framework -- the COMPLETE logical split every source book must
+# follow. A clone user splits their book into exactly these files (see README
+# "准备书籍原文"); the app scans chapter_md/ + chapter_html/ for the
+# `source_filename` stem of each. Listed here so the framework is always visible
+# even before any book text is placed (has_md/has_html are overlaid from disk).
+_CANONICAL_FRAMEWORK: list[dict] = [
+    {"id": "preface",  "title": "序言",   "sort_key": 0,  "source_filename": "序-序言"},
+    {"id": "ch01",     "title": "第1章",  "sort_key": 1,  "source_filename": "第1章"},
+    {"id": "ch02",     "title": "第2章",  "sort_key": 2,  "source_filename": "第2章"},
+    {"id": "ch03",     "title": "第3章",  "sort_key": 3,  "source_filename": "第3章"},
+    {"id": "ch04",     "title": "第4章",  "sort_key": 4,  "source_filename": "第4章"},
+    {"id": "ch05",     "title": "第5章",  "sort_key": 5,  "source_filename": "第5章"},
+    {"id": "ch06",     "title": "第6章",  "sort_key": 6,  "source_filename": "第6章"},
+    {"id": "ch07",     "title": "第7章",  "sort_key": 7,  "source_filename": "第7章"},
+    {"id": "ch08",     "title": "第8章",  "sort_key": 8,  "source_filename": "第8章"},
+    {"id": "questions","title": "问题清单", "sort_key": 99, "source_filename": "问题清单"},
+]
+
+
+def _config_chapter_titles() -> dict[str, str]:
+    """chapter_id -> chapter_title from active chapter_configs (DB)."""
+    titles: dict[str, str] = {}
+    with get_conn() as c:
+        rows = c.execute(
+            "SELECT chapter_id, config_json FROM chapter_configs WHERE active = 1"
+        ).fetchall()
+    for row in rows:
+        try:
+            cfg = json.loads(row["config_json"] or "{}")
+        except (json.JSONDecodeError, TypeError):
+            continue
+        t = cfg.get("chapter_title")
+        if t:
+            titles[row["chapter_id"]] = t
+    return titles
+
+
 @lru_cache(maxsize=1)
 def _scan_chapters() -> list[dict]:
     """Walk chapter_html + chapter_md dirs and produce the chapter list.
@@ -191,18 +228,45 @@ def _chapter_progress(chapter_id: str) -> dict:
 
 @router.get("/chapters")
 def list_chapters():
-    """All chapters discovered from chapter_html/ + chapter_md/. Chapter ids use
-    the unified ch01..ch08 format (handoff v2.0 决策 4)."""
+    """Return the COMPLETE book framework (序 + 第1-8章 + 问题清单).
+
+    The framework itself is always listed (from _CANONICAL_FRAMEWORK) so a clone
+    user sees the full structure before placing any book text. has_md/has_html
+    reflect what is actually present on disk; has_steps reflects whether the
+    chapter has an active step workflow (chapter_configs). Chapter titles are
+    taken from chapter_configs when available, else the canonical default.
+    Chapter ids use the unified ch01..ch08 format (handoff v2.0 决策 4).
+    """
+    scanned = {c["id"]: c for c in _scan_chapters()}
+    config_titles = _config_chapter_titles()
+    config_ids = _chapters_with_configs()
     out = []
-    for ch in _scan_chapters():
+    for fw in _CANONICAL_FRAMEWORK:
+        cid = fw["id"]
+        sc = scanned.get(cid, {"has_html": False, "has_md": False})
         out.append({
-            "id": ch["id"],
-            "title": ch["title"],
-            "has_html": ch["has_html"],
-            "has_md": ch["has_md"],
-            "has_steps": ch["id"] in _chapters_with_configs(),
-            **_chapter_progress(ch["id"]),
+            "id": cid,
+            "title": config_titles.get(cid) or fw["title"],
+            "has_html": bool(sc.get("has_html", False)),
+            "has_md": bool(sc.get("has_md", False)),
+            "has_steps": cid in config_ids,
+            "sort_key": fw["sort_key"],
+            **_chapter_progress(cid),
         })
+    # defensive: include any scanned chapter not in the canonical framework
+    framework_ids = {fw["id"] for fw in _CANONICAL_FRAMEWORK}
+    for cid, sc in scanned.items():
+        if cid not in framework_ids:
+            out.append({
+                "id": cid,
+                "title": sc.get("title", cid),
+                "has_html": bool(sc.get("has_html", False)),
+                "has_md": bool(sc.get("has_md", False)),
+                "has_steps": cid in config_ids,
+                "sort_key": sc.get("sort_key", 50),
+                **_chapter_progress(cid),
+            })
+    out.sort(key=lambda c: c["sort_key"])
     return out
 
 
@@ -247,8 +311,12 @@ def last_reading():
 
 @router.get("/chapters/{chapter_id}")
 def get_chapter(chapter_id: str):
-    """章节元数据。Chapter ids use ch01..ch08 (handoff v2.0 决策 4)."""
-    for ch in _scan_chapters():
+    """章节元数据。Chapter ids use ch01..ch08 (handoff v2.0 决策 4).
+
+    A chapter in the canonical framework is always resolvable (its metadata is
+    returned even before the book text is placed); only truly unknown ids 404.
+    """
+    for ch in list_chapters():
         if ch["id"] == chapter_id:
             return {"id": ch["id"], "title": ch["title"],
                     "has_steps": ch["id"] in _chapters_with_configs()}
@@ -258,8 +326,8 @@ def get_chapter(chapter_id: str):
 @router.get("/chapters/{chapter_id}/content")
 def get_chapter_content(chapter_id: str):
     """返回章节内容（Phase A: 单页 HTML；旧 4 章走 styled 多页 fallback）。"""
-    # 1. Validate chapter exists
-    valid_ids = {c["id"] for c in _scan_chapters()}
+    # 1. Validate chapter exists (framework-aware)
+    valid_ids = {c["id"] for c in list_chapters()}
     if chapter_id not in valid_ids:
         raise HTTPException(404, f"Chapter {chapter_id} not found")
 
