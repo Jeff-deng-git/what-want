@@ -50,7 +50,7 @@ def _strip_chapter_filename(stem: str) -> dict | None:
         return {"id": "preface", "title": "序言", "sort_key": 0}
 
     # numbered chapters: "第N章-..."
-    m = re.match(r"^第([一二三四五六七八九十百千]+|\d+)章[---\s]*(.*)$", s)
+    m = re.match(r"^第([一二三四五六七八九十百千]+|\d+)章[-\s]*(.*)$", s)
     if m:
         cn = m.group(1)
         rest = m.group(2).strip()
