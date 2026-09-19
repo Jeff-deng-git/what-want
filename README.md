@@ -67,7 +67,7 @@ python seed_questions.py
 python run.py                   # 后端起在 :8011
 ```
 
-然后打开 `platform/frontend/index.html`（或用任意静态服务器托管）。
+然后访问 `http://localhost:<BACKEND_PORT>/`（默认 `http://localhost:8011/`）。后端已在根路径 `/` 直接托管前端，**无需再单独起静态服务器**；前端 API 走同源 `location.origin`，改端口也无需改任何代码。
 
 **AI 能力需要自备密钥**（没有密钥时后端可启动、静态流程可走通，但 AI 分析会失败）：
 
@@ -132,11 +132,11 @@ What_Want/                ← 项目根（含 platform/ 与 llm_prompt_design/�
 
 ```
 What_Want/
+├── index.html           单页前端（仓库根目录；后端在 / 直接托管，无需单独起静态服务器）
 ├── llm_prompt_design/
 │   └── config/          章节配置 JSON + 统一 Schema（chapters/ 是运行时权威契约）
 └── platform/
-    ├── backend/         FastAPI 服务（routers / runtime / services / tests）
-    ├── frontend/        单页前端
+    ├── backend/         FastAPI 服务（routers / runtime / services）
     └── SPEC.md          架构规格
 ```
 

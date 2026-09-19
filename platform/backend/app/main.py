@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from app.config import FRONTEND_ORIGIN
 from app.db import init_db
@@ -132,9 +133,14 @@ def on_startup():
     init_db()
 
 
+# 单文件前端位于仓库根目录（index.html），后端在根路径直接托管，
+# 前端 API base 使用同源 location.origin，因此不受后端端口变化影响。
+INDEX_HTML = Path(__file__).resolve().parents[3] / "index.html"
+
+
 @app.get("/")
 def root():
-    return {"name": "What Want backend", "status": "ok"}
+    return FileResponse(str(INDEX_HTML))
 
 
 @app.get("/api/health")

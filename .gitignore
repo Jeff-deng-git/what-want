@@ -54,7 +54,7 @@ platform/backend/tests/_tmp/
 HANDOFF.md
 
 # ---- 设计侧过程件：设计文档 / 交互原型 / 备份（本地保留，公开仓库只留可运行内容）----
-# 运行时真正需要的只有：platform/backend、platform/frontend、llm_prompt_design/config
+# 运行时真正需要的只有：platform/backend、index.html（仓库根目录前端）、llm_prompt_design/config
 /llm_prompt_design/docs/
 /llm_prompt_design/backups/
 /llm_prompt_design/README.md

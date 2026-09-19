@@ -257,4 +257,4 @@ def seed():
 
 if __name__ == "__main__":
     seed()
-    print("\nDone. Visit http://localhost:8011/api/roles to verify.")
+    print(f"\nDone. Visit http://localhost:{os.getenv('BACKEND_PORT', '8011')}/api/roles to verify.")

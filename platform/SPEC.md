@@ -86,9 +86,9 @@
   - `app/data/chapter_configs/` — 每章步骤定义 JSON
 
 - **Frontend（单页原生 JS SPA，非框架）**
-  - `frontend/index.html`（约 1516 行，无构建步骤）：章节网格 + 阅读双/三栏 + 右侧 tab 面板（摘要/对话/步骤/笔记）+ 题库 + 浮动角色头像
+  - `index.html`（仓库根目录，约 1516 行，无构建步骤）：章节网格 + 阅读双/三栏 + 右侧 tab 面板（摘要/对话/步骤/笔记）+ 题库 + 浮动角色头像
   - 三栏/双栏由 `GET /api/book/chapters/{id}` 的 `has_steps` 切换（有 active chapter_config → 三栏，否则两栏）
-  - 已实现 `renderStepOutput`（按 output 字段名分支渲染，待补 `groups`/`conversions` 分支）；API base 当前硬编码 `http://localhost:8011`，M3 改为 `location.origin` 或后端以 `StaticFiles` 挂载到 `:8011/`
+  - 已实现 `renderStepOutput`（按 output 字段名分支渲染，待补 `groups`/`conversions` 分支）；API base 已改为同源 `location.origin`（默认），支持 `?api=` 或 `window.API_BASE` 覆盖；后端在 `/` 以 `FileResponse` 直接托管前端（M3 已落地）
   - 注：原 Next.js 组件拆分方案未落地，本重构以单文件 SPA 为准（详见 `llm_prompt_design/docs/站点重构与开发计划.md` §2.1）
 
 ### 数据模型（SQLite）
@@ -192,7 +192,7 @@ POST   /api/chapters/{cid}/steps/{sid}/submit
 
 ### 端口与项目布局
 
-- 前端为单文件 `frontend/index.html`（无独立端口），后端 `:8011`（避开 ai-agent-book 的 3010/8010）；前端 API base 当前硬编码 `http://localhost:8011`，M3 改为 `location.origin` 或后端 `StaticFiles` 挂载到 `:8011/`
+- 前端为单文件 `index.html`（仓库根目录，无独立端口），由后端在 `/` 以 `FileResponse` 托管；API base 已改为同源 `location.origin`（M3 已落地）
 - 项目根：`platform/`（本仓库根目录下的 `platform/`）
 - 复用：ai-agent-book 项目的 `app/security/providers.py`（LLM provider + 加密），已复制进本仓库 `app/security/providers.py`
 
