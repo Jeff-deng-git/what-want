@@ -87,8 +87,8 @@ def parse_questions(text: str) -> list[dict]:
 def seed():
     init_db()
     if not QUESTIONS_MD.exists():
-        print(f"ERROR: {QUESTIONS_MD} not found")
-        sys.exit(1)
+        print(f"SKIP: {QUESTIONS_MD} 未找到（书籍原文未随仓库发布，跳过题库种子）")
+        return
     text = QUESTIONS_MD.read_text(encoding="utf-8")
     questions = parse_questions(text)
 

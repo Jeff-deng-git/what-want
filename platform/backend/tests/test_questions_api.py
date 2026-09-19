@@ -1,12 +1,15 @@
 """Question bank API: list, get, answer save/read (via book_notes)."""
 import pytest
 import pytest_asyncio
+from pathlib import Path
 
 
 @pytest_asyncio.fixture
 async def seeded_client(client):
     """Base client + questions seeded into its tmp DB."""
-    from seed_questions import seed
+    from seed_questions import QUESTIONS_MD, seed
+    if not QUESTIONS_MD.exists():
+        pytest.skip("问题清单.md 未提供（书籍原文不随仓库发布）")
     seed()
     return client
 
@@ -28,7 +31,11 @@ async def test_questions_list_has_categories(seeded_client):
 def test_parser_keeps_all_90():
     """Unit: parser keeps last question per category, filters 100-example tables."""
     from seed_questions import parse_questions
-    text = open("D:/AI_Project/What_Want/chapter_md/问题清单.md", encoding="utf-8").read()
+    # 问题清单.md 由书籍原文提取，不随仓库发布；自备后放在仓库根 chapter_md/ 下。
+    data_path = Path(__file__).resolve().parents[3] / "chapter_md" / "问题清单.md"
+    if not data_path.exists():
+        pytest.skip("问题清单.md 未提供（书籍原文不随仓库发布）")
+    text = data_path.read_text(encoding="utf-8")
     qs = parse_questions(text)
     assert len(qs) == 90
     cats = {}

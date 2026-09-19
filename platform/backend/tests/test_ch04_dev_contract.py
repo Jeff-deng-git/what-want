@@ -190,7 +190,7 @@ async def test_ch04_step3_proposal_runs_high_thinking_in_batches_of_three(monkey
         {"value": f"词{i}", "answer": f"依据{i}"} for i in range(7)
     ]}
     result = await agent._run_ch04_step3_proposal_batches(
-        role={"provider": "deepseek", "model": "deepseek-v4-flash", "system_prompt": "role", "temperature": 0.5, "max_tokens": 4000},
+        role={"provider": "deepseek", "model": "deepseek-flash", "system_prompt": "role", "temperature": 0.5, "max_tokens": 4000},
         cfg={"chapter_id": "ch04"}, exercise={"step_id": "step-3"}, prior={},
         user_answers=answers, chapter_md="", profile={}, preserve_output=None,
     )
@@ -228,7 +228,7 @@ async def test_ch04_step3_length_batch_splits_to_single_and_keeps_partial_succes
     monkeypatch.setattr(agent, "build_step_prompt", fake_build)
     monkeypatch.setattr(agent, "call_llm", fake_call)
     result = await agent._run_ch04_step3_proposal_batches(
-        role={"provider": "deepseek", "model": "deepseek-v4-flash", "system_prompt": "role", "temperature": 0.5, "max_tokens": 4000},
+        role={"provider": "deepseek", "model": "deepseek-flash", "system_prompt": "role", "temperature": 0.5, "max_tokens": 4000},
         cfg={"chapter_id": "ch04"}, exercise={"step_id": "step-3"}, prior={},
         user_answers={"clarifications": [{"value": "甲", "answer": "一"}, {"value": "乙", "answer": "二"}]},
         chapter_md="", profile={}, preserve_output=None,
@@ -732,6 +732,12 @@ def test_mentor_context_contains_only_submitted_ch04_steps(tmp_path, monkeypatch
 async def test_ch04_value_examples_endpoint_reads_the_100_value_list():
     from httpx import ASGITransport, AsyncClient
     from app.main import app
+    from pathlib import Path
+
+    # 100 例清单来自书籍原文 chapter_md/问题清单.md（不随仓库发布）；缺书源时跳过。
+    data_path = Path(__file__).resolve().parents[3] / "chapter_md" / "问题清单.md"
+    if not data_path.exists():
+        pytest.skip("问题清单.md 未提供（书籍原文不随仓库发布）")
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/api/book/chapters/ch04/value-examples")

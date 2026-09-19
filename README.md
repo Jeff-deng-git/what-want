@@ -42,17 +42,28 @@
 
 ## 技术栈
 
-- **后端**：Python 3 + FastAPI + SQLite（单用户本地部署，数据不出本机）
+- **后端**：Python 3.11+ + FastAPI + SQLite（单用户本地部署，数据不出本机）
 - **前端**：原生 HTML/CSS/JS 单页，无构建步骤
 - **AI**：OpenAI 兼容接口，角色与提示词由配置定义
 - **内容**：书籍正文由 PDF/EPUB 提取为 Markdown 与图片
 
 ## 快速开始
 
+> **Python 版本**：需要 Python 3.11 或 3.12（推荐 3.11）；Python 3.13 也已验证可安装可运行。
+
 ```bash
 cd platform/backend
-pip install -r requirements.txt
-python seed_all_chapters.py     # 初始化章节配置与题库
+python -m pip install -r requirements.txt
+
+# 必需：8 章流程配置 → chapter_configs 表
+python seed_all_chapters.py
+# 必需：LLM 角色（导师「刘老师」/ 总结 / 心理咨询师 / 职业咨询师）→ llm_roles 表
+#       chat 对话与 summary 总结功能依赖这些角色，不种会运行失败
+python scripts/seed_roles.py
+# 可选：题库（价值观/才能/热情 各 30 题）→ questions 表
+#       需要自备书籍原文 chapter_md/问题清单.md；缺失时跳过即可（不影响其它功能）
+python seed_questions.py
+
 python run.py                   # 后端起在 :8011
 ```
 
@@ -67,7 +78,12 @@ export DEEPSEEK_API_KEY="sk-..."        # 或对应 provider 的 <PROVIDER>_API_
 
 主要环境变量：`BACKEND_PORT`（默认 8011）、`WW_DB_PATH`（默认 `data/ww.db`）、`FRONTEND_ORIGIN`（默认 `http://localhost:3011`）。
 
-> **前置条件**：两处功能依赖书籍正文，需自备——① 章节正文阅读（放到项目根 `chapter_md/`）；② 第四章「100 例价值观清单」抽屉（读 `chapter_md/问题清单.md`，缺失时该抽屉为空，不会报错）。**其余流程与练习功能由章节配置驱动，不依赖书籍原文。**
+> **前置条件（书籍原文需自备）**：以下功能依赖书籍正文，请自行将《如何找到想做的事》的 Markdown 提取结果放到项目根 `chapter_md/`：
+> - ① 章节正文阅读（`chapter_md/` 下的章节 MD）；
+> - ② 常驻导师「刘老师」对话（`/api/chapters/{id}/chat/send`）与章节总结（`/api/chapters/{id}/summary/regenerate`）会基于章节 MD 作答，缺书源时返回 404「No markdown source」；
+> - ③ 第四章「100 例价值观清单」抽屉（读 `chapter_md/问题清单.md`，缺失时该抽屉为空，不会报错）。
+>
+> **其余流程与练习功能（章节步骤、跨章档案、失效隔离）由章节配置驱动，不依赖书籍原文。**
 
 ## 目录结构
 

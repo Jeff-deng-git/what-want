@@ -18,7 +18,9 @@ from app.db import get_conn
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/chapters/{chapter_id}/summary", tags=["summary"])
+# NOTE: 不使用带路径参数的 prefix + 空相对路径路由的组合（FastAPI/Starlette 在运行时
+# 会让同级字面量子路由如 /regenerate 错误地 404）。改为每条路由写全路径，URL 契约不变。
+router = APIRouter(tags=["summary"])
 
 USE_AGENT_SUMMARY = os.getenv("USE_AGENT_SUMMARY", "1") != "0"
 SUMMARY_MD_CAP = 12000
@@ -51,7 +53,7 @@ def _upsert(chapter_id: str, parsed: dict):
         )
 
 
-@router.get("")
+@router.get("/api/chapters/{chapter_id}/summary")
 def get_summary(chapter_id: str):
     """Return cached summary, or {summary: null} if not generated yet."""
     cached = _read_cached(chapter_id)
@@ -60,7 +62,7 @@ def get_summary(chapter_id: str):
     return {"chapter_id": chapter_id, "summary": None, "updated_at": None}
 
 
-@router.post("/regenerate")
+@router.post("/api/chapters/{chapter_id}/summary/regenerate")
 async def regenerate_summary(chapter_id: str):
     """Force LLM to (re)generate the chapter summary, overwrite cache."""
     if USE_AGENT_SUMMARY:
@@ -123,7 +125,7 @@ async def _regenerate_legacy(chapter_id: str):
     )
     raw = await call_llm(
         provider="deepseek",
-        model="deepseek-v4-flash",
+        model="deepseek-flash",
         api_key=api_key,
         system=SUMMARY_SYSTEM,
         user=md[:SUMMARY_MD_CAP],

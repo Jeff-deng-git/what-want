@@ -86,7 +86,7 @@ async def test_call_llm_retries_after_reasoning_length(monkeypatch):
     monkeypatch.setattr(llm_client, "AsyncOpenAI", FakeClient)
     result = await llm_client.call_llm(
         provider="deepseek",
-        model="deepseek-v4-flash",
+        model="deepseek-flash",
         api_key="fake",
         system="system",
         user="user",
@@ -123,7 +123,7 @@ async def test_call_llm_can_explicitly_enable_provider_thinking(monkeypatch):
     monkeypatch.setattr(llm_client, "AsyncOpenAI", FakeClient)
     await llm_client.call_llm(
         provider="deepseek",
-        model="deepseek-v4-flash",
+        model="deepseek-flash",
         api_key="fake",
         system="system",
         user="user",
@@ -157,7 +157,7 @@ async def test_call_llm_disables_sdk_retries_by_default(monkeypatch):
     monkeypatch.setattr(llm_client, "AsyncOpenAI", FakeClient)
     result = await llm_client.call_llm(
         provider="deepseek",
-        model="deepseek-v4-flash",
+        model="deepseek-flash",
         api_key="fake",
         system="system",
         user="user",
@@ -186,7 +186,7 @@ async def test_call_llm_enforces_total_timeout_across_attempts(monkeypatch):
     with pytest.raises(llm_client.LLMTimeoutError, match="total"):
         await llm_client.call_llm(
             provider="deepseek",
-            model="deepseek-v4-flash",
+            model="deepseek-flash",
             api_key="fake",
             system="system",
             user="user",

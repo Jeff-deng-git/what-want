@@ -11,8 +11,10 @@ Idempotent: skips rows whose name already exists.
 """
 import sys
 import uuid
+from pathlib import Path
 
-sys.path.insert(0, r"D:\AI_Project\What_Want\platform\backend")
+# 让 backend 包可被导入，无论本脚本被放在什么位置（clone 后路径不固定）。
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.db import get_conn
 
 MENTOR_SYSTEM = (
@@ -120,7 +122,7 @@ ROLES = [
 
 def main():
     provider = "deepseek"
-    model = "deepseek-v4-flash"
+    model = "deepseek-flash"
     with get_conn() as conn:
         for role in ROLES:
             existing = conn.execute(

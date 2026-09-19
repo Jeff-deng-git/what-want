@@ -22,7 +22,9 @@ from app.services.llm_client import LLMTimeoutError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/chapters/{chapter_id}/chat", tags=["chat"])
+# NOTE: 不使用带路径参数的 prefix + 空相对路径路由的组合（FastAPI/Starlette 在运行时
+# 会让同级字面量子路由如 /send 错误地 404）。改为每条路由写全路径，URL 契约保持不变。
+router = APIRouter(tags=["chat"])
 
 HISTORY_LIMIT = 10
 USE_AGENT_CHAT = os.getenv("USE_AGENT_CHAT", "1") != "0"
@@ -67,7 +69,7 @@ def _history_to_lines(history: list[dict]) -> list[str]:
     return out
 
 
-@router.get("")
+@router.get("/api/chapters/{chapter_id}/chat")
 def get_history(chapter_id: str):
     """All messages for this chapter, oldest first."""
     with get_conn() as c:
@@ -79,7 +81,7 @@ def get_history(chapter_id: str):
     return [dict(r) for r in rows]
 
 
-@router.post("/send")
+@router.post("/api/chapters/{chapter_id}/chat/send")
 async def send_message(chapter_id: str, body: SendIn):
     """Send user message, get mentor reply, persist both."""
     content = body.content.strip()
@@ -320,7 +322,7 @@ async def _send_message_legacy(chapter_id: str, content: str):
         raise HTTPException(500, "DEEPSEEK_API_KEY not set")
     reply = await call_llm(
         provider="deepseek",
-        model="deepseek-v4-flash",
+        model="deepseek-flash",
         api_key=api_key,
         system=system,
         user=user_prompt,
@@ -352,7 +354,7 @@ async def _send_message_legacy(chapter_id: str, content: str):
     return {"user": user_msg, "mentor": mentor_msg}
 
 
-@router.delete("")
+@router.delete("/api/chapters/{chapter_id}/chat")
 def clear_history(chapter_id: str):
     """Clear this chapter's chat history."""
     with get_conn() as c:
